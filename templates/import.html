@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Import Leads</h1>
+  <p>Upload a CSV or Excel file. Columns supported: <strong>client_name</strong> (or <strong>name</strong>), <strong>client_mobile</strong> (or <strong>mobile</strong>), <strong>product</strong>, <strong>status</strong>, <strong>call_on</strong>, <strong>call_type</strong>, <strong>priority</strong>, <strong>notes</strong></p>
+  <form method="post" enctype="multipart/form-data">
+    <label>Select file<input type="file" name="file" accept=".csv,.xls,.xlsx" required></label>
+    <button class="btn" type="submit">Import</button>
+  </form>
+
+{% endblock %}

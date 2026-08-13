@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Lead #{{ lead.lead_id }} - {{ lead.product }}</h1>
+
+  <section class="card">
+    <h3>Client</h3>
+    <p><strong>{{ lead.name }}</strong><br/>{{ lead.mobile }}</p>
+  </section>
+
+  <section class="card">
+    <h3>Lead</h3>
+    <p>Product: {{ lead.product }}</p>
+    <p>Status: <span class="badge">{{ lead.status }}</span></p>
+    <p>Call On: {{ lead.call_on or '—' }}</p>
+    <p>Created: {{ lead.created_at }}</p>
+    <p>Updated: {{ lead.updated_at }}</p>
+    <a class="btn" href="/edit/{{ lead.lead_id }}">Edit Lead</a>
+  </section>
+
+  <section class="card">
+    <h3>Follow-Up History</h3>
+    {% if notes %}
+      <ul class="notes">
+        {% for n in notes %}
+          <li>
+            <div class="note-meta">{{ n.created_at }}</div>
+            <div class="note-body">{{ n.note }}</div>
+            <form method="post" action="/note/{{ n.note_id }}/delete" onsubmit="return confirm('Delete this note?');" style="margin-top:6px">
+              <button type="submit" class="btn small danger">Delete Note</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No notes.</p>
+    {% endif %}
+
+    <form method="post" action="/lead/{{ lead.lead_id }}/add_note" class="note-form">
+      <textarea name="note" rows="3" placeholder="Add follow-up note"></textarea>
+      <button class="btn" type="submit">Add Note</button>
+    </form>
+  </section>
+
+{% endblock %}

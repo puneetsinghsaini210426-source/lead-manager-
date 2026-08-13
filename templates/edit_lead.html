@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Edit Lead #{{ lead.lead_id }}</h1>
+  <form method="post" class="form">
+    <label>Client name<input name="name" value="{{ lead.name }}" required></label>
+    <label>Mobile<input name="mobile" value="{{ lead.mobile }}" required></label>
+    <label>Product<input name="product" value="{{ lead.product }}" required></label>
+    <label>Status
+      <select name="status">
+        {% for s in statuses %}
+          <option value="{{s}}" {% if s==lead.status %}selected{% endif %}>{{s}}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Type
+      <select name="call_type">
+        <option value="Call" {% if lead.call_type=='Call' %}selected{% endif %}>Call</option>
+        <option value="Meet" {% if lead.call_type=='Meet' %}selected{% endif %}>Meet</option>
+      </select>
+    </label>
+    <label>Priority
+      <select name="priority">
+        <option value="Low" {% if lead.priority=='Low' %}selected{% endif %}>Low</option>
+        <option value="Normal" {% if lead.priority=='Normal' %}selected{% endif %}>Normal</option>
+        <option value="High" {% if lead.priority=='High' %}selected{% endif %}>High</option>
+      </select>
+    </label>
+    <label>Call On<input type="date" name="call_on" value="{{ lead.call_on }}"></label>
+    <button class="btn" type="submit">Save</button>
+  </form>
+{% endblock %}

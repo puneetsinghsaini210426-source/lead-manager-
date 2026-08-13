@@ -1,0 +1,47 @@
+:root{--accent:#2563eb;--accent-2:#7c3aed;--danger:#ef4444;--bg:#f5f7fb;--card:#ffffff;--muted:#6b7280;--glass: rgba(255,255,255,0.6)}
+*{box-sizing:border-box}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;margin:0;background:linear-gradient(180deg,#f7fbff 0%,#f5f7fb 100%);color:#0f172a;-webkit-font-smoothing:antialiased}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(255,255,255,0.9);backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(16,24,40,0.06);border-bottom:1px solid rgba(15,23,42,0.04);position:sticky;top:0;z-index:30}
+.nav-left{display:flex;align-items:center;gap:12px}
+.brand a{font-weight:700;color:var(--accent);text-decoration:none;font-size:1.15rem}
+.nav-toggle{display:none;border:0;background:transparent;font-size:20px;cursor:pointer}
+.nav-right{display:flex}
+.nav-links{list-style:none;margin:0;padding:0;display:flex;gap:12px;align-items:center}
+.nav-links li{display:inline}
+.nav-links a{color:#0f172a;text-decoration:none;padding:8px 12px;border-radius:8px;transition:all .15s}
+.nav-links a:hover{background:rgba(37,99,235,0.08)}
+.container{max-width:1100px;margin:28px auto;padding:0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.card{background:var(--card);padding:18px;border-radius:12px;border:1px solid rgba(15,23,42,0.04);box-shadow:0 6px 18px rgba(15,23,42,0.04)}
+.actions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;border:none;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,0.12)}
+.btn.small{padding:6px 10px;font-size:.9em}
+.btn.danger{background:linear-gradient(90deg,#ff7a7a,#ef4444);box-shadow:0 6px 18px rgba(239,68,68,0.12)}
+.table{width:100%;border-collapse:collapse;background:transparent;border-radius:12px;overflow:hidden}
+.table th,.table td{padding:12px 14px;border-bottom:1px solid rgba(15,23,42,0.04);text-align:left}
+.table thead th{background:rgba(249,250,251,0.8);font-weight:600}
+.table tbody tr:hover{background:rgba(15,23,42,0.02)}
+.badge{display:inline-block;background:#eef2ff;color:#4f46e5;padding:6px 10px;border-radius:999px;font-size:0.85em;font-weight:600}
+.flashes{margin:14px 0}
+.flash{padding:10px;border-radius:10px;margin-bottom:8px}
+.flash.success{background:#ecfdf5;color:#065f46}
+.flash.danger{background:#fff1f2;color:#831843}
+.notes{list-style:none;padding:0;margin:0}
+.note-meta{font-size:0.85em;color:var(--muted);margin-bottom:6px}
+.note-body{padding:8px 0}
+.form label{display:block;margin-bottom:10px;font-weight:600;color:#0f172a}
+.form input,.form textarea,.form select{width:100%;padding:12px;border:1px solid rgba(15,23,42,0.06);border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0.5));}
+.form input:focus,.form textarea:focus,.form select:focus{outline:none;box-shadow:0 6px 18px rgba(37,99,235,0.12);border-color:rgba(37,99,235,0.3)}
+.form-inline input,.form-inline select{margin-right:8px}
+.calls-list{list-style:none;padding:0;margin:0}
+.call-item{background:var(--card);padding:14px;border-radius:10px;margin-bottom:10px;border:1px solid rgba(15,23,42,0.04);display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.call-item.overdue{box-shadow:inset 6px 0 0 var(--danger)}
+.status-Converted .badge{background:#ecfdf5;color:#065f46}
+.status-Lost .badge{background:#fff1f2;color:#831843}
+.status-Interested .badge{background:#fff7ed;color:#92400e}
+.inline{display:inline-block;margin:0}
+.notes li{padding:10px;border-bottom:1px solid rgba(15,23,42,0.03)}
+/* popover for notes preview */
+.notes-popover{font-size:0.95rem;color:#0f172a}
+@media(max-width:900px){.nav-links{display:none;flex-direction:column;background:var(--card);position:absolute;right:16px;top:64px;padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(2,6,23,0.08)}.nav-toggle{display:block}}
+@media(max-width:600px){.container{margin:12px auto;padding:0 12px}.grid{grid-template-columns:1fr}}

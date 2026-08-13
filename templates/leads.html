@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Leads</h1>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Client</th><th>Mobile</th><th>Product</th><th>Status</th><th>Type</th><th>Priority</th><th>Call On</th><th>Updated</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for l in leads %}
+      <tr class="status-{{ l.status|replace(' ','-') }}">
+        <td>{{ l.lead_id }}</td>
+        <td>{{ l.name }}</td>
+        <td>{{ l.mobile }}</td>
+        <td>{{ l.product }}</td>
+        <td><span class="badge">{{ l.status }}</span></td>
+        <td><small class="muted">{{ l.call_type or 'Call' }}</small></td>
+        <td><small class="muted">{{ l.priority or 'Normal' }}</small></td>
+        <td>{{ l.call_on or '-' }}</td>
+        <td>{{ l.updated_at }}</td>
+        <td><span class="notes-preview" data-lead-id="{{ l.lead_id }}">{{ l.notes_count }} notes</span></td>
+        <td>
+          <a class="btn small" href="/lead/{{ l.lead_id }}">View</a>
+          <a class="btn small" href="/edit/{{ l.lead_id }}">Edit</a>
+          <form method="post" action="/delete/{{ l.lead_id }}" class="inline" onsubmit="return confirm('Delete this lead?');">
+            <button class="btn small danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}

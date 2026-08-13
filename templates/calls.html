@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Calls / Meets - {{ filter|capitalize }}</h1>
+  <div class="call-filters">
+    <a class="btn" href="/calls?filter=today&type=all">Today</a>
+    <a class="btn" href="/calls?filter=tomorrow&type=all">Tomorrow</a>
+    <a class="btn" href="/calls?filter=overdue&type=all">Overdue</a>
+    <a class="btn" href="/calls?filter=upcoming&type=all">Upcoming</a>
+    <a class="btn" href="/calls?filter=all&type=all">All Scheduled</a>
+    <div style="display:inline-block;margin-left:8px">
+      <a class="btn" href="/calls?filter={{filter}}&type=Call">Only Calls</a>
+      <a class="btn" href="/calls?filter={{filter}}&type=Meet">Only Meets</a>
+    </div>
+    <form method="get" action="/calls" class="inline">
+      <input type="date" name="date" value="{{ date.isoformat() if date else '' }}">
+      <input type="hidden" name="filter" value="date">
+      <button class="btn" type="submit">Go</button>
+    </form>
+  </div>
+
+  <ul class="calls-list">
+    {% for l in leads %}
+      <li class="call-item {% if l.call_on and today_date and l.call_on < today_date %}overdue{% endif %}">
+        <div>
+          <a href="/lead/{{ l.lead_id }}"><strong>{{ l.name }}</strong></a>
+          <div class="muted">{{ l.mobile }}</div>
+        </div>
+        <div style="text-align:right">
+          <div>{{ l.product }} — <span class="badge">{{ l.status }}</span></div>
+          <div><small>Type: {{ l.call_type or 'Call' }} • Priority: {{ l.priority or 'Normal' }}</small></div>
+          <div>On: {{ l.call_on }}</div>
+        </div>
+      </li>
+    {% else %}
+      <li>No calls</li>
+    {% endfor %}
+  </ul>
+
+{% endblock %}

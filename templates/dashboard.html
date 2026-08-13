@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Dashboard</h1>
+  <div class="grid">
+    <div class="card">Total Leads<br/><strong>{{stats.total_leads}}</strong></div>
+    <div class="card">New Leads<br/><strong>{{stats.new_leads}}</strong></div>
+    <div class="card">Interested<br/><strong>{{stats.interested_leads}}</strong></div>
+    <div class="card">Converted<br/><strong>{{stats.converted_leads}}</strong></div>
+    <div class="card">Lost<br/><strong>{{stats.lost_leads}}</strong></div>
+    <div class="card">Calls Today<br/><strong>{{stats.calls_today}}</strong></div>
+    <div class="card">Overdue Calls<br/><strong class="overdue">{{stats.overdue_calls}}</strong></div>
+    <div class="card">Calls Tomorrow<br/><strong>{{stats.calls_tomorrow}}</strong></div>
+  </div>
+
+  <div class="actions">
+    <a class="btn" href="/add">Add Lead</a>
+    <a class="btn" href="/calls?filter=today">Today's Calls</a>
+    <a class="btn" href="/leads">All Leads</a>
+    <a class="btn" href="/search">Search</a>
+  </div>
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Backups</h1>
+  <form method="post" action="/restore" enctype="multipart/form-data">
+    <label>Upload backup to restore<input type="file" name="file" accept=".db"></label>
+    <button class="btn" type="submit">Restore</button>
+  </form>
+
+  <h3>Available Backups</h3>
+  <ul>
+    {% for f in files %}
+      <li><a href="/backups/download/{{f}}">{{f}}</a></li>
+    {% else %}
+      <li>No backups yet</li>
+    {% endfor %}
+  </ul>
+  <div style="margin-top:16px">
+    <a class="btn" href="/export">Export All Leads (Excel)</a>
+    <a class="btn" href="/import">Import Leads</a>
+  </div>
+
+{% endblock %}

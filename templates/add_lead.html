@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Add Lead</h1>
+  <form method="post" class="form">
+    <label>Client name<input name="name" value="{{ form.name if form else '' }}" required></label>
+    <label>Mobile<input name="mobile" value="{{ form.mobile if form else '' }}" required></label>
+    <label>Product<input name="product" value="{{ form.product if form else '' }}" required></label>
+    <label>Status
+      <select name="status">
+        {% for s in statuses %}
+          <option value="{{s}}">{{s}}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Type
+      <select name="call_type">
+        <option value="Call">Call</option>
+        <option value="Meet">Meet</option>
+      </select>
+    </label>
+    <label>Priority
+      <select name="priority">
+        <option value="Low">Low</option>
+        <option value="Normal" selected>Normal</option>
+        <option value="High">High</option>
+      </select>
+    </label>
+    <label>Call On<input type="date" name="call_on" value="{{ form.call_on if form else '' }}"></label>
+    <label>Initial Note (optional)<textarea name="note">{{ form.note if form else '' }}</textarea></label>
+    <button class="btn" type="submit">Save</button>
+  </form>
+
+{% endblock %}

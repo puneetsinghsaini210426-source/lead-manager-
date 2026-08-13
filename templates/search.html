@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Search Leads</h1>
+  <form method="get" class="form-inline">
+    <input name="name" placeholder="Client name" value="{{ form.name or '' }}">
+    <input name="mobile" placeholder="Mobile" value="{{ form.mobile or '' }}">
+    <input name="product" placeholder="Product" value="{{ form.product or '' }}">
+    <input type="date" name="call_on" placeholder="Call On" value="{{ form.call_on or '' }}">
+    <select name="status">
+      <option value="">-- Status --</option>
+      {% for s in statuses %}
+        <option value="{{s}}" {% if form.status==s %}selected{% endif %}>{{s}}</option>
+      {% endfor %}
+    </select>
+    <select name="call_type">
+      <option value="">-- Type --</option>
+      <option value="Call" {% if form.call_type=='Call' %}selected{% endif %}>Call</option>
+      <option value="Meet" {% if form.call_type=='Meet' %}selected{% endif %}>Meet</option>
+    </select>
+    <select name="priority">
+      <option value="">-- Priority --</option>
+      <option value="Low" {% if form.priority=='Low' %}selected{% endif %}>Low</option>
+      <option value="Normal" {% if form.priority=='Normal' %}selected{% endif %}>Normal</option>
+      <option value="High" {% if form.priority=='High' %}selected{% endif %}>High</option>
+    </select>
+    <input name="lead_id" placeholder="Lead ID" value="{{ form.lead_id or '' }}">
+    <button class="btn" type="submit">Search</button>
+  </form>
+
+  <hr/>
+  <table class="table">
+    <thead><tr><th>ID</th><th>Client</th><th>Mobile</th><th>Product</th><th>Status</th><th>Call On</th><th>Updated</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for l in leads %}
+      <tr class="status-{{ l.status|replace(' ','-') }}">
+        <td>{{ l.lead_id }}</td>
+        <td>{{ l.name }}</td>
+        <td>{{ l.mobile }}</td>
+        <td>{{ l.product }}</td>
+        <td><span class="badge">{{ l.status }}</span></td>
+        <td>{{ l.call_on or '-' }}</td>
+        <td>{{ l.updated_at }}</td>
+        <td>{{ l.notes_count }}</td>
+        <td>
+          <a class="btn small" href="/lead/{{ l.lead_id }}">View</a>
+          <a class="btn small" href="/edit/{{ l.lead_id }}">Edit</a>
+          <form method="post" action="/delete/{{ l.lead_id }}" class="inline" onsubmit="return confirm('Delete this lead?');">
+            <button class="btn small danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}
