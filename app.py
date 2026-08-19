@@ -458,7 +458,16 @@ def search():
     cur.execute(query, tuple(params))
     rows = cur.fetchall()
     statuses = STATUSES
-    return render_template('search.html', leads=rows, statuses=statuses, form=request.args)
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    return render_template(
+        'search.html',
+        leads=rows,
+        statuses=statuses,
+        form=request.args,
+        today=today.isoformat(),
+        tomorrow=tomorrow.isoformat(),
+    )
 
 
 @app.route('/calls')
