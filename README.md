@@ -11,12 +11,19 @@ redeploys, and Free web services cannot attach persistent disks. Use a hosted Po
 database instead. Supabase Free is a practical option for this small app (500 MB); its
 database can pause after inactivity, but pausing is different from deleting the data.
 
-Create a Supabase project, copy its PostgreSQL connection string, and set this Render
-environment variable:
+Create a Supabase project, open **Connect**, choose **Session pooler**, and set the
+pooler connection string as this Render environment variable. Do not use the direct
+connection string beginning with `db.<project-ref>.supabase.co`; Supabase documents
+that direct endpoint as IPv6-only on the free tier, while Render is IPv4-only.
 
 ```text
-DATABASE_URL=postgresql://postgres:PASSWORD@HOST:5432/postgres?sslmode=require
+DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-REGION.pooler.supabase.com:5432/postgres?sslmode=require
 ```
+
+Use the exact host, region, username, and password shown by Supabase. The pooler
+username normally looks like `postgres.PROJECT_REF`, and Session pooler uses port `5432`.
+Transaction pooler uses port `6543`, but Session pooler is the better fit for this
+long-running Flask/Gunicorn service.
 
 The app creates the PostgreSQL tables automatically on startup. All devices using the
 same Render URL then read and write the same hosted database. Export the current local

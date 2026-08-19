@@ -27,7 +27,15 @@ class PostgresConnection:
     def __init__(self, url):
         import psycopg
         from psycopg.rows import dict_row
-        self._connection = psycopg.connect(url, row_factory=dict_row)
+        try:
+            self._connection = psycopg.connect(url, row_factory=dict_row, connect_timeout=15)
+        except psycopg.OperationalError as error:
+            if '.supabase.co' in url and '.pooler.supabase.com' not in url:
+                raise RuntimeError(
+                    'Supabase direct database connections use IPv6 and are unreachable from Render. '
+                    'Use the Supabase Session pooler URL (aws-REGION.pooler.supabase.com:5432) in DATABASE_URL.'
+                ) from error
+            raise
 
     def cursor(self):
         return PostgresCursor(self._connection.cursor())
