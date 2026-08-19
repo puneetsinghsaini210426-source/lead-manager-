@@ -5,24 +5,29 @@ Simple local Lead Management app.
 ## Production data storage
 
 The app uses one server-side database. Leads are not tied to a browser, laptop, or phone.
-For Render, do not rely on the default project directory for production data: Render's
-service filesystem is ephemeral and can be reset after a redeploy or restart. Attach a
-persistent disk to the service, for example mounted at `/var/data`, and set these
-environment variables:
+For Render Free, do not rely on the default project directory for production data:
+Render documents that local files are lost when a free service spins down, restarts, or
+redeploys, and Free web services cannot attach persistent disks. Use a hosted PostgreSQL
+database instead. Supabase Free is a practical option for this small app (500 MB); its
+database can pause after inactivity, but pausing is different from deleting the data.
+
+Create a Supabase project, copy its PostgreSQL connection string, and set this Render
+environment variable:
 
 ```text
-DATA_DIR=/var/data
-DATABASE_PATH=/var/data/leads.db
-BACKUP_DIR=/var/data/backups
+DATABASE_URL=postgresql://postgres:PASSWORD@HOST:5432/postgres?sslmode=require
 ```
 
-After deploying with the persistent disk, all devices using the same service URL will
-read and write the same database. Export the current local leads before deployment and
-use the Import page after deployment if the hosted database starts empty.
+The app creates the PostgreSQL tables automatically on startup. All devices using the
+same Render URL then read and write the same hosted database. Export the current local
+leads before deployment and use the Import page after setting `DATABASE_URL` if the
+hosted database starts empty.
 
-SQLite is suitable for one Render service instance with a persistent disk. If you scale
-to multiple instances, migrate to a managed PostgreSQL database instead; separate
-instances must not share a SQLite file over a network filesystem.
+Render's own Free Postgres is not suitable as a permanent free choice because Render's
+current documentation says Free Postgres expires after 30 days. Supabase Free can also
+pause after a week of inactivity, so the first request after a pause may be slower, but
+the database contents remain available when the project resumes. Keep regular exports
+for important data because the Supabase Free plan does not include downloadable backups.
 
 Setup
 
@@ -45,7 +50,7 @@ python app.py
 Files
 
 - `app.py` — Flask application
-- `database.py` — sqlite helper and initializer
+- `database.py` — SQLite/PostgreSQL helper and initializer
 - `schema.sql` — database schema
 - `database/leads.db` — created on first run
 - `backups/` — backups are stored here

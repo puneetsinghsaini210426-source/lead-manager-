@@ -12,7 +12,7 @@ app.secret_key = os.environ.get('FLASK_SECRET', 'devsecret')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get('DATA_DIR', os.path.join(BASE_DIR, 'database'))
-DB_PATH = os.environ.get('DATABASE_PATH', os.path.join(DATA_DIR, 'leads.db'))
+DB_PATH = os.environ.get('DATABASE_URL', os.environ.get('DATABASE_PATH', os.path.join(DATA_DIR, 'leads.db')))
 BACKUP_DIR = os.environ.get('BACKUP_DIR', os.path.join(DATA_DIR, 'backups'))
 STATUSES = ['New', 'Contacted', 'Interested', 'Quotation Sent', 'Negotiating', 'Converted', 'Not Interested', 'Lost']
 CALL_TYPES = ['Call', 'Meet']
@@ -20,7 +20,8 @@ PRIORITIES = ['Low', 'Normal', 'High']
 
 
 def setup():
-    os.makedirs(os.path.dirname(DB_PATH) or '.', exist_ok=True)
+    if not DB_PATH.startswith(('postgres://', 'postgresql://')):
+        os.makedirs(os.path.dirname(DB_PATH) or '.', exist_ok=True)
     os.makedirs(BACKUP_DIR, exist_ok=True)
     init_db(DB_PATH)
     # ensure schema migrations (add columns) on existing DBs
@@ -240,8 +241,9 @@ def add_lead():
             cur.execute('''
                 INSERT INTO clients (name, mobile, email, company, job_title, address, city, notes, created_at, updated_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?)
+                RETURNING client_id
             ''', (name, mobile, email, company, job_title, address, city, client_notes, created_at, created_at))
-            client_id = cur.lastrowid
+            client_id = cur.fetchone()['client_id']
 
         now = datetime.utcnow().isoformat()
         call_on_val = call_on.isoformat() if call_on else None
@@ -251,10 +253,11 @@ def add_lead():
                 description, estimated_value, currency, probability, last_contacted_at,
                 next_follow_up_at, lost_reason, owner, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            RETURNING lead_id
         ''', (client_id, product, status, call_on_val, call_type, priority, source, source_detail,
               description, estimated_value, currency, probability, last_contacted_at,
               next_follow_up_at, lost_reason, owner, now, now))
-        lead_id = cur.lastrowid
+        lead_id = cur.fetchone()['lead_id']
         if note:
             cur.execute('INSERT INTO follow_up_notes (lead_id,note,created_at) VALUES (?,?,?)', (lead_id,note,now))
         db.commit()
@@ -539,6 +542,9 @@ def calls():
 
 @app.route('/backup', methods=['GET'])
 def backup():
+    if DB_PATH.startswith(('postgres://', 'postgresql://')):
+        flash('PostgreSQL backups are managed by your database provider. Use Export to download a portable lead file.', 'danger')
+        return redirect(url_for('dashboard'))
     src = DB_PATH
     if not os.path.exists(src):
         flash('Database not found to backup', 'danger')
@@ -697,8 +703,9 @@ def import_leads():
             cur.execute('''
                 INSERT INTO clients (name, mobile, email, company, job_title, address, city, notes, created_at, updated_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?)
+                RETURNING client_id
             ''', (name, mobile, email, company, job_title, address, city, client_notes, created_at, created_at))
-            client_id = cur.lastrowid
+            client_id = cur.fetchone()['client_id']
         now = datetime.utcnow().isoformat()
         cur.execute('''
             INSERT INTO leads (
@@ -706,10 +713,11 @@ def import_leads():
                 description, estimated_value, currency, probability, last_contacted_at,
                 next_follow_up_at, lost_reason, owner, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            RETURNING lead_id
         ''', (client_id, product, status, call_on_val, call_type, priority, source, source_detail,
               description, estimated_value, currency, probability, last_contacted_at,
               next_follow_up_at, lost_reason, owner, now, now))
-        lead_id = cur.lastrowid
+        lead_id = cur.fetchone()['lead_id']
         if note and note.strip():
             # split imported notes on double newlines if present
             parts = [p.strip() for p in note.split('\n\n') if p.strip()]
@@ -728,6 +736,9 @@ def download_backup(filename):
 
 @app.route('/restore', methods=['POST'])
 def restore():
+    if DB_PATH.startswith(('postgres://', 'postgresql://')):
+        flash('Database restore uploads are available only for local SQLite storage. Import an exported lead file instead.', 'danger')
+        return redirect(url_for('list_backups'))
     f = request.files.get('file')
     if not f:
         flash('No file uploaded', 'danger')

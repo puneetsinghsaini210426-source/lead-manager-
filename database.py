@@ -2,9 +2,49 @@ import sqlite3
 import os
 
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schema.sql')
+POSTGRES_SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'postgres_schema.sql')
+
+
+def is_postgres(db_path):
+    return str(db_path).startswith(('postgres://', 'postgresql://'))
+
+
+class PostgresCursor:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, query, params=()):
+        return self._cursor.execute(query.replace('?', '%s'), params)
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+
+class PostgresConnection:
+    def __init__(self, url):
+        import psycopg
+        from psycopg.rows import dict_row
+        self._connection = psycopg.connect(url, row_factory=dict_row)
+
+    def cursor(self):
+        return PostgresCursor(self._connection.cursor())
+
+    def execute(self, query, params=()):
+        return self._connection.execute(query.replace('?', '%s'), params)
+
+    def commit(self):
+        self._connection.commit()
+
+    def close(self):
+        self._connection.close()
 
 
 def get_db(db_path):
+    if is_postgres(db_path):
+        return PostgresConnection(db_path)
     conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA foreign_keys = ON')
@@ -12,6 +52,15 @@ def get_db(db_path):
 
 
 def init_db(db_path):
+    if is_postgres(db_path):
+        conn = PostgresConnection(db_path)
+        with open(POSTGRES_SCHEMA_PATH, 'r') as schema_file:
+            statements = [statement.strip() for statement in schema_file.read().split(';') if statement.strip()]
+        for statement in statements:
+            conn.execute(statement)
+        conn.commit()
+        conn.close()
+        return
     if not os.path.exists(db_path):
         with open(SCHEMA_PATH, 'r') as f:
             schema = f.read()
@@ -23,6 +72,9 @@ def init_db(db_path):
 
 
 def ensure_columns(db_path):
+    if is_postgres(db_path):
+        init_db(db_path)
+        return
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     cur.execute("PRAGMA table_info(clients)")
