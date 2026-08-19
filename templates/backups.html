@@ -1,22 +1,7 @@
 {% extends "base.html" %}
+{% block title %}Backups{% endblock %}
+{% block page_title %}Backups and restore{% endblock %}
+{% block page_subtitle %}Protect your lead data and recover it when needed{% endblock %}
 {% block content %}
-  <h1>Backups</h1>
-  <form method="post" action="/restore" enctype="multipart/form-data">
-    <label>Upload backup to restore<input type="file" name="file" accept=".db"></label>
-    <button class="btn" type="submit">Restore</button>
-  </form>
-
-  <h3>Available Backups</h3>
-  <ul>
-    {% for f in files %}
-      <li><a href="/backups/download/{{f}}">{{f}}</a></li>
-    {% else %}
-      <li>No backups yet</li>
-    {% endfor %}
-  </ul>
-  <div style="margin-top:16px">
-    <a class="btn" href="/export">Export All Leads (Excel)</a>
-    <a class="btn" href="/import">Import Leads</a>
-  </div>
-
+<div class="operations-grid"><section class="card operation-card"><div class="operation-icon icon-green">✓</div><h1>Restore database</h1><p>Upload a trusted LeadFlow database backup to restore your workspace.</p><form method="post" action="{{ url_for('restore') }}" enctype="multipart/form-data" class="upload-form"><label class="file-drop"><span>Choose a database backup</span><small>.db files only</small><input type="file" name="file" accept=".db" required></label><button class="btn btn-primary" type="submit">Restore backup</button></form></section><section class="card operation-card"><div class="card-header compact-header"><div><div class="card-title">Available backups</div><div class="card-subtitle">{{ files|length }} saved database files</div></div><a class="btn btn-secondary btn-compact" href="{{ url_for('backup') }}">＋ Create backup</a></div><div class="backup-list">{% for file in files %}<a class="backup-item" href="{{ url_for('download_backup', filename=file) }}"><span class="backup-icon">▣</span><span><strong>{{ file }}</strong><small>Download database backup</small></span><span class="view-link">⇩</span></a>{% else %}<div class="empty-state">▣<strong>No backups yet</strong><span>Create your first backup to protect this workspace.</span></div>{% endfor %}</div></section></div><div class="operation-links"><a class="btn btn-secondary" href="{{ url_for('export_leads') }}">⇩ Export all leads</a><a class="btn btn-secondary" href="{{ url_for('import_leads') }}">⇧ Import leads</a></div>
 {% endblock %}

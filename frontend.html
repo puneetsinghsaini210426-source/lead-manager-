@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>LeadFlow — CRM Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f6f8fb;
+            --surface: #ffffff;
+            --surface-soft: #f9fafb;
+            --border: #e6e9ef;
+            --text: #111827;
+            --muted: #6b7280;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-soft: #eef2ff;
+            --success: #10b981;
+            --success-soft: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-soft: #fffbeb;
+            --danger: #ef4444;
+            --danger-soft: #fef2f2;
+            --blue: #3b82f6;
+            --blue-soft: #eff6ff;
+            --sidebar: #111827;
+            --sidebar-hover: #1f2937;
+            --radius: 14px;
+            --shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        body {
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* =========================
+           APP LAYOUT
+        ========================= */
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .sidebar {
+            width: 255px;
+            background: var(--sidebar);
+            color: white;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.25s ease;
+        }
+
+        .brand {
+            height: 76px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+            box-shadow: 0 5px 18px rgba(99,102,241,.3);
+        }
+
+        .brand-name {
+            font-size: 19px;
+            font-weight: 750;
+            letter-spacing: -0.4px;
+        }
+
+        .brand-sub {
+            font-size: 10px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        .sidebar-content {
+            padding: 22px 14px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .nav-label {
+            color: #6b7280;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 0 12px;
+            margin: 10px 0 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 12px;
+            border-radius: 10px;
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 550;
+            margin-bottom: 3px;
+            transition: .18s ease;
+        }
+
+        .nav-item:hover {
+            color: white;
+            background: var(--sidebar-hover);
+        }
+
+        .nav-item.active {
+            color: white;
+            background: #312e81;
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            min-width: 22px;
+            height: 21px;
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            background: rgba(255,255,255,.1);
+            font-size: 11px;
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid rgba(255,255,255,.07);
+        }
+
+        .user-box {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 9px;
+            border-radius: 11px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .user-role {
+            color: #9ca3af;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        .main {
+            margin-left: 255px;
+            width: calc(100% - 255px);
+            min-height: 100vh;
+        }
+
+        .topbar {
+            height: 76px;
+            background: rgba(255,255,255,.88);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .mobile-menu {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 9px;
+            font-size: 18px;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 750;
+            letter-spacing: -0.5px;
+        }
+
+        .page-subtitle {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .notification-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--danger);
+            position: absolute;
+            right: 8px;
+            top: 7px;
+            border: 1px solid white;
+        }
+
+        .content {
+            padding: 30px;
+            max-width: 1600px;
+            margin: auto;
+        }
+
+        /* =========================
+           WELCOME
+        ========================= */
+
+        .welcome {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 26px;
+        }
+
+        .welcome h1 {
+            font-size: 26px;
+            letter-spacing: -0.8px;
+            margin-bottom: 5px;
+        }
+
+        .welcome p {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 11px 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 650;
+            transition: .18s ease;
+        }
+
+        .btn-primary {
+            color: white;
+            background: var(--primary);
+            box-shadow: 0 5px 14px rgba(79,70,229,.18);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-soft);
+        }
+
+        /* =========================
+           STAT CARDS
+        ========================= */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            box-shadow: var(--shadow);
+            transition: .2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(15,23,42,.08);
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .stat-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        .icon-purple {
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        .icon-blue {
+            background: var(--blue-soft);
+            color: var(--blue);
+        }
+
+        .icon-green {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .icon-orange {
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+
+        .icon-red {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .stat-number {
+            font-size: 27px;
+            font-weight: 750;
+            margin-top: 13px;
+            letter-spacing: -1px;
+        }
+
+        .stat-change {
+            font-size: 10px;
+            margin-top: 5px;
+            color: var(--muted);
+        }
+
+        .stat-change.positive {
+            color: var(--success);
+        }
+
+        /* =========================
+           MAIN GRID
+        ========================= */
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 330px;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .card-header {
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .card-subtitle {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .view-link {
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        /* =========================
+           SEARCH
+        ========================= */
+
+        .toolbar {
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search {
+            flex: 1;
+            position: relative;
+        }
+
+        .search input {
+            width: 100%;
+            height: 40px;
+            border: 1px solid var(--border);
+            background: var(--surface-soft);
+            border-radius: 9px;
+            padding: 0 13px 0 38px;
+            outline: none;
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        .search input:focus {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79,70,229,.08);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .filter {
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 0 12px;
+            background: white;
+            color: #4b5563;
+            font-size: 12px;
+            outline: none;
+        }
+
+        /* =========================
+           TABLE
+        ========================= */
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 20px;
+            font-size: 10px;
+            color: #9ca3af;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            background: #fafbfc;
+        }
+
+        td {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            vertical-align: middle;
+        }
+
+        tbody tr {
+            transition: .15s ease;
+        }
+
+        tbody tr:hover {
+            background: #fafbff;
+        }
+
+        .client {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .client-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .client-name {
+            font-weight: 650;
+            color: #1f2937;
+        }
+
+        .client-company {
+            color: #9ca3af;
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .status::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .status-new {
+            color: var(--blue);
+            background: var(--blue-soft);
+        }
+
+        .status-contacted {
+            color: #7c3aed;
+            background: #f5f3ff;
+        }
+
+        .status-interested {
+            color: var(--success);
+            background: var(--success-soft);
+        }
+
+        .status-negotiating {
+            color: var(--warning);
+            background: var(--warning-soft);
+        }
+
+        .status-converted {
+            color: #059669;
+            background: #d1fae5;
+        }
+
+        .status-lost {
+            color: var(--danger);
+            background: var(--danger-soft);
+        }
+
+        .priority {
+            font-size: 10px;
+            font-weight: 650;
+        }
+
+        .priority.high {
+            color: var(--danger);
+        }
+
+        .priority.normal {
+            color: var(--warning);
+        }
+
+        .priority.low {
+            color: var(--muted);
+        }
+
+        .date {
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .action-btn {
+            border: none;
+            background: transparent;
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            color: #9ca3af;
+        }
+
+        .action-btn:hover {
+            background: #f3f4f6;
+            color: var(--text);
+        }
+
+        /* =========================
+           SIDE CARDS
+        ========================= */
+
+        .side-card {
+            padding-bottom: 8px;
+        }
+
+        .follow-list {
+            padding: 5px 20px;
+        }
+
+        .follow-item {
+            display: flex;
+            gap: 11px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .follow-item:last-child {
+            border-bottom: none;
+        }
+
+        .follow-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: var(--primary-soft);
+            color: var(--primary);
+        }
+
+        .follow-info {
+            min-width: 0;
+        }
+
+        .follow-name {
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .follow-detail {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .follow-time {
+            font-size: 10px;
+            color: var(--primary);
+            font-weight: 650;
+            margin-top: 4px;
+        }
+
+        /* =========================
+           PROGRESS
+        ========================= */
+
+        .pipeline {
+            padding: 18px 20px;
+        }
+
+        .pipeline-row {
+            margin-bottom: 15px;
+        }
+
+        .pipeline-head {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .pipeline-name {
+            color: #4b5563;
+        }
+
+        .pipeline-value {
+            font-weight: 650;
+        }
+
+        .progress {
+            height: 6px;
+            border-radius: 20px;
+            background: #f1f3f5;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: inherit;
+            background: var(--primary);
+        }
+
+        .progress-green {
+            background: var(--success);
+        }
+
+        .progress-orange {
+            background: var(--warning);
+        }
+
+        .progress-blue {
+            background: var(--blue);
+        }
+
+        /* =========================
+           MODAL
+        ========================= */
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.45);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 650px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: white;
+            border-radius: 17px;
+            box-shadow: 0 25px 70px rgba(15,23,42,.2);
+        }
+
+        .modal-header {
+            padding: 20px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 750;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 8px;
+            color: #6b7280;
+            font-size: 17px;
+        }
+
+        .modal-body {
+            padding: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 650;
+            color: #374151;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: white;
+            padding: 10px 11px;
+            outline: none;
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,.08);
+        }
+
+        .modal-footer {
+            padding: 16px 22px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 9px;
+        }
+
+        /* =========================
+           MOBILE OVERLAY
+        ========================= */
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.4);
+            z-index: 999;
+            display: none;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 1250px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .content {
+                padding: 22px;
+            }
+
+            .topbar {
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 650px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .welcome {
+                align-items: flex-start;
+                gap: 15px;
+                flex-direction: column;
+            }
+
+            .welcome .btn {
+                width: 100%;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .topbar {
+                height: 68px;
+                padding: 0 15px;
+            }
+
+            .page-title {
+                font-size: 17px;
+            }
+
+            .page-subtitle {
+                display: none;
+            }
+
+            .topbar-right .icon-btn:nth-child(2) {
+                display: none;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .filter {
+                width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.full {
+                grid-column: auto;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-number {
+                font-size: 24px;
+            }
+
+            .card-header {
+                padding: 16px;
+            }
+
+            .toolbar {
+                padding: 13px 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <div class="brand">
+            <div class="brand-logo">L</div>
+
+            <div>
+                <div class="brand-name">LeadFlow</div>
+                <div class="brand-sub">CLIENT MANAGEMENT</div>
+            </div>
+        </div>
+
+        <div class="sidebar-content">
+
+            <div class="nav-label">Workspace</div>
+
+            <a href="/" class="nav-item active">
+                <span class="nav-icon">⌂</span>
+                Dashboard
+            </a>
+
+            <a href="/leads" class="nav-item">
+                <span class="nav-icon">◈</span>
+                All Leads
+                <span class="nav-badge">{{ stats.total_leads if stats else 0 }}</span>
+            </a>
+
+            <a href="/add" class="nav-item">
+                <span class="nav-icon">＋</span>
+                Add Lead
+            </a>
+
+            <div class="nav-label">Follow-ups</div>
+
+            <a href="/leads" class="nav-item">
+                <span class="nav-icon">◷</span>
+                Today's Calls
+                <span class="nav-badge">{{ stats.calls_today if stats else 0 }}</span>
+            </a>
+
+            <a href="/leads" class="nav-item">
+                <span class="nav-icon">!</span>
+                Overdue
+                <span class="nav-badge">{{ stats.overdue_calls if stats else 0 }}</span>
+            </a>
+
+            <div class="nav-label">Management</div>
+
+            <a href="/leads" class="nav-item">
+                <span class="nav-icon">▣</span>
+                Pipeline
+            </a>
+
+            <a href="/leads" class="nav-item">
+                <span class="nav-icon">✓</span>
+                Converted
+            </a>
+
+        </div>
+
+        <div class="sidebar-footer">
+
+            <div class="user-box">
+
+                <div class="avatar">AD</div>
+
+                <div>
+                    <div class="user-name">Administrator</div>
+                    <div class="user-role">Lead Manager</div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="main">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div class="topbar-left">
+
+                <button class="mobile-menu" id="mobileMenu">
+                    ☰
+                </button>
+
+                <div>
+                    <div class="page-title">Dashboard</div>
+                    <div class="page-subtitle">
+                        Overview of your sales activity
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="topbar-right">
+
+                <button class="icon-btn">
+                    ⌕
+                </button>
+
+                <button class="icon-btn">
+                    ♢
+                    <span class="notification-dot"></span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <section class="content">
+
+            <!-- WELCOME -->
+
+            <div class="welcome">
+
+                <div>
+                    <h1>Good evening 👋</h1>
+                    <p>Here's what's happening with your leads today.</p>
+                </div>
+
+                <button class="btn btn-primary" id="openModal">
+                    <span>＋</span>
+                    Add New Lead
+                </button>
+
+            </div>
+
+
+            <!-- STATISTICS -->
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+                        <span class="stat-label">Total Leads</span>
+
+                        <div class="stat-icon icon-purple">
+                            ◈
+                        </div>
+                    </div>
+
+                    <div class="stat-number">
+                        {{ stats.total_leads if stats else 0 }}
+                    </div>
+
+                    <div class="stat-change positive">
+                        Active pipeline
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+                        <span class="stat-label">New Leads</span>
+
+                        <div class="stat-icon icon-blue">
+                            ✦
+                        </div>
+                    </div>
+
+                    <div class="stat-number">
+                        {{ stats.new_leads if stats else 0 }}
+                    </div>
+
+                    <div class="stat-change">
+                        Awaiting contact
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+                        <span class="stat-label">Interested</span>
+
+                        <div class="stat-icon icon-green">
+                            ♥
+                        </div>
+                    </div>
+
+                    <div class="stat-number">
+                        {{ stats.interested_leads if stats else 0 }}
+                    </div>
+
+                    <div class="stat-change positive">
+                        High potential
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+                        <span class="stat-label">Converted</span>
+
+                        <div class="stat-icon icon-orange">
+                            ✓
+                        </div>
+                    </div>
+
+                    <div class="stat-number">
+                        {{ stats.converted_leads if stats else 0 }}
+                    </div>
+
+                    <div class="stat-change positive">
+                        Successful deals
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+                        <span class="stat-label">Lost</span>
+
+                        <div class="stat-icon icon-red">
+                            ×
+                        </div>
+                    </div>
+
+                    <div class="stat-number">
+                        {{ stats.lost_leads if stats else 0 }}
+                    </div>
+
+                    <div class="stat-change">
+                        Closed leads
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- DASHBOARD GRID -->
+
+            <div class="dashboard-grid">
+
+                <!-- LEADS -->
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <div>
+                            <div class="card-title">Recent Leads</div>
+                            <div class="card-subtitle">
+                                Recently updated customer opportunities
+                            </div>
+                        </div>
+
+                        <a href="/leads" class="view-link">
+                            View all →
+                        </a>
+
+                    </div>
+
+
+                    <div class="toolbar">
+
+                        <div class="search">
+
+                            <span class="search-icon">⌕</span>
+
+                            <input
+                                type="text"
+                                id="searchInput"
+                                placeholder="Search clients, products..."
+                            >
+
+                        </div>
+
+                        <select class="filter" id="statusFilter">
+
+                            <option value="">All statuses</option>
+                            <option value="New">New</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Interested">Interested</option>
+                            <option value="Quotation Sent">Quotation Sent</option>
+                            <option value="Negotiating">Negotiating</option>
+                            <option value="Converted">Converted</option>
+                            <option value="Not Interested">Not Interested</option>
+                            <option value="Lost">Lost</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="table-wrap">
+
+                        <table id="leadsTable">
+
+                            <thead>
+
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Product</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Follow-up</th>
+                                    <th></th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                {% if leads %}
+
+                                    {% for lead in leads[:8] %}
+
+                                    <tr>
+
+                                        <td>
+
+                                            <div class="client">
+
+                                                <div class="client-avatar">
+                                                    {{ lead.name[:2].upper() }}
+                                                </div>
+
+                                                <div>
+
+                                                    <div class="client-name">
+                                                        {{ lead.name }}
+                                                    </div>
+
+                                                    {% if lead.company %}
+                                                    <div class="client-company">
+                                                        {{ lead.company }}
+                                                    </div>
+                                                    {% endif %}
+
+                                                </div>
+
+                                            </div>
+
+                                        </td>
+
+                                        <td>
+                                            <span class="product-name">
+                                                {{ lead.product }}
+                                            </span>
+                                        </td>
+
+                                        <td>
+
+                                            {% set status_class = {
+                                                'New':'status-new',
+                                                'Contacted':'status-contacted',
+                                                'Interested':'status-interested',
+                                                'Negotiating':'status-negotiating',
+                                                'Converted':'status-converted',
+                                                'Lost':'status-lost'
+                                            }.get(lead.status, 'status-contacted') %}
+
+                                            <span class="status {{ status_class }}">
+                                                {{ lead.status }}
+                                            </span>
+
+                                        </td>
+
+                                        <td>
+
+                                            <span class="priority {{ lead.priority|lower }}">
+                                                {{ lead.priority }}
+                                            </span>
+
+                                        </td>
+
+                                        <td>
+
+                                            {% if lead.call_on %}
+                                                <span class="date">
+                                                    {{ lead.call_on }}
+                                                </span>
+                                            {% else %}
+                                                <span class="date">
+                                                    —
+                                                </span>
+                                            {% endif %}
+
+                                        </td>
+
+                                        <td>
+
+                                            <a
+                                                href="/lead/{{ lead.lead_id }}"
+                                                class="action-btn"
+                                                title="View lead"
+                                            >
+                                                →
+                                            </a>
+
+                                        </td>
+
+                                    </tr>
+
+                                    {% endfor %}
+
+                                {% else %}
+
+                                    <tr>
+
+                                        <td colspan="6">
+
+                                            <div style="
+                                                text-align:center;
+                                                padding:45px 20px;
+                                                color:#9ca3af;
+                                            ">
+
+                                                <div style="
+                                                    font-size:30px;
+                                                    margin-bottom:10px;
+                                                ">
+                                                    ◈
+                                                </div>
+
+                                                <div style="
+                                                    font-weight:650;
+                                                    color:#4b5563;
+                                                    margin-bottom:4px;
+                                                ">
+                                                    No leads yet
+                                                </div>
+
+                                                <div style="font-size:11px;">
+                                                    Add your first lead to get started.
+                                                </div>
+
+                                            </div>
+
+                                        </td>
+
+                                    </tr>
+
+                                {% endif %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+
+                <!-- RIGHT COLUMN -->
+
+                <div>
+
+                    <!-- FOLLOW UPS -->
+
+                    <div class="card side-card">
+
+                        <div class="card-header">
+
+                            <div>
+                                <div class="card-title">
+                                    Follow-ups
+                                </div>
+
+                                <div class="card-subtitle">
+                                    Upcoming activities
+                                </div>
+                            </div>
+
+                            <a href="/leads" class="view-link">
+                                View
+                            </a>
+
+                        </div>
+
+
+                        <div class="follow-list">
+
+                            <div class="follow-item">
+
+                                <div class="follow-icon">
+                                    ☎
+                                </div>
+
+                                <div class="follow-info">
+
+                                    <div class="follow-name">
+                                        Today's calls
+                                    </div>
+
+                                    <div class="follow-detail">
+                                        Scheduled for today
+                                    </div>
+
+                                    <div class="follow-time">
+                                        {{ stats.calls_today if stats else 0 }} calls
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="follow-item">
+
+                                <div class="follow-icon">
+                                    !
+                                </div>
+
+                                <div class="follow-info">
+
+                                    <div class="follow-name">
+                                        Overdue
+                                    </div>
+
+                                    <div class="follow-detail">
+                                        Need your attention
+                                    </div>
+
+                                    <div class="follow-time">
+                                        {{ stats.overdue_calls if stats else 0 }} overdue
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="follow-item">
+
+                                <div class="follow-icon">
+                                    ◷
+                                </div>
+
+                                <div class="follow-info">
+
+                                    <div class="follow-name">
+                                        Tomorrow
+                                    </div>
+
+                                    <div class="follow-detail">
+                                        Upcoming calls
+                                    </div>
+
+                                    <div class="follow-time">
+                                        {{ stats.calls_tomorrow if stats else 0 }} calls
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PIPELINE -->
+
+                    <div class="card side-card" style="margin-top:20px;">
+
+                        <div class="card-header">
+
+                            <div>
+                                <div class="card-title">
+                                    Lead Pipeline
+                                </div>
+
+                                <div class="card-subtitle">
+                                    Current distribution
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <div class="pipeline">
+
+                            <div class="pipeline-row">
+
+                                <div class="pipeline-head">
+                                    <span class="pipeline-name">New</span>
+                                    <span class="pipeline-value">
+                                        {{ stats.new_leads if stats else 0 }}
+                                    </span>
+                                </div>
+
+                                <div class="progress">
+                                    <div
+                                        class="progress-bar progress-blue"
+                                        style="width:45%"
+                                    ></div>
+                                </div>
+
+                            </div>
+
+
+                            <div class="pipeline-row">
+
+                                <div class="pipeline-head">
+                                    <span class="pipeline-name">Interested</span>
+                                    <span class="pipeline-value">
+                                        {{ stats.interested_leads if stats else 0 }}
+                                    </span>
+                                </div>
+
+                                <div class="progress">
+                                    <div
+                                        class="progress-bar progress-green"
+                                        style="width:65%"
+                                    ></div>
+                                </div>
+
+                            </div>
+
+
+                            <div class="pipeline-row">
+
+                                <div class="pipeline-head">
+                                    <span class="pipeline-name">Converted</span>
+                                    <span class="pipeline-value">
+                                        {{ stats.converted_leads if stats else 0 }}
+                                    </span>
+                                </div>
+
+                                <div class="progress">
+                                    <div
+                                        class="progress-bar"
+                                        style="width:35%"
+                                    ></div>
+                                </div>
+
+                            </div>
+
+
+                            <div class="pipeline-row">
+
+                                <div class="pipeline-head">
+                                    <span class="pipeline-name">Lost</span>
+                                    <span class="pipeline-value">
+                                        {{ stats.lost_leads if stats else 0 }}
+                                    </span>
+                                </div>
+
+                                <div class="progress">
+                                    <div
+                                        class="progress-bar progress-orange"
+                                        style="width:20%"
+                                    ></div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- ================= ADD LEAD MODAL ================= -->
+
+<div class="modal-overlay" id="modalOverlay">
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <div class="modal-title">
+                Add New Lead
+            </div>
+
+            <button class="modal-close" id="closeModal">
+                ×
+            </button>
+
+        </div>
+
+
+        <form action="/add" method="POST">
+
+            <div class="modal-body">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label>Client Name *</label>
+
+                        <input
+                            type="text"
+                            name="name"
+                            placeholder="Enter client name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Mobile Number *</label>
+
+                        <input
+                            type="tel"
+                            name="mobile"
+                            placeholder="+91 XXXXX XXXXX"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Email</label>
+
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="client@example.com"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Company</label>
+
+                        <input
+                            type="text"
+                            name="company"
+                            placeholder="Company name"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Product *</label>
+
+                        <input
+                            type="text"
+                            name="product"
+                            placeholder="Product requested"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Status *</label>
+
+                        <select name="status" required>
+
+                            <option value="New">New</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Interested">Interested</option>
+                            <option value="Quotation Sent">Quotation Sent</option>
+                            <option value="Negotiating">Negotiating</option>
+                            <option value="Converted">Converted</option>
+                            <option value="Not Interested">Not Interested</option>
+                            <option value="Lost">Lost</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Priority</label>
+
+                        <select name="priority">
+
+                            <option value="Low">Low</option>
+                            <option value="Normal" selected>Normal</option>
+                            <option value="High">High</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Call Type</label>
+
+                        <select name="call_type">
+
+                            <option value="Call">Call</option>
+                            <option value="Meet">Meet</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Follow-up Date</label>
+
+                        <input
+                            type="date"
+                            name="call_on"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Estimated Value</label>
+
+                        <input
+                            type="number"
+                            name="estimated_value"
+                            placeholder="₹ 0"
+                            min="0"
+                            step="0.01"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Probability</label>
+
+                        <input
+                            type="number"
+                            name="probability"
+                            placeholder="0 - 100"
+                            min="0"
+                            max="100"
+                            value="0"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Owner</label>
+
+                        <input
+                            type="text"
+                            name="owner"
+                            placeholder="Sales owner"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <label>Description</label>
+
+                        <textarea
+                            name="description"
+                            placeholder="Add details about this lead..."
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group full">
+
+                        <label>Follow-up Note</label>
+
+                        <textarea
+                            name="note"
+                            placeholder="Write your initial follow-up note..."
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    id="cancelModal"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Create Lead
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    /* =========================
+       MOBILE SIDEBAR
+    ========================= */
+
+    const mobileMenu = document.getElementById("mobileMenu");
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+    mobileMenu?.addEventListener("click", () => {
+        sidebar.classList.add("open");
+        sidebarOverlay.classList.add("show");
+    });
+
+    sidebarOverlay?.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.remove("show");
+    });
+
+
+    /* =========================
+       MODAL
+    ========================= */
+
+    const modalOverlay = document.getElementById("modalOverlay");
+    const openModal = document.getElementById("openModal");
+    const closeModal = document.getElementById("closeModal");
+    const cancelModal = document.getElementById("cancelModal");
+
+    function showModal() {
+        modalOverlay.classList.add("show");
+        document.body.style.overflow = "hidden";
+    }
+
+    function hideModal() {
+        modalOverlay.classList.remove("show");
+        document.body.style.overflow = "";
+    }
+
+    openModal?.addEventListener("click", showModal);
+    closeModal?.addEventListener("click", hideModal);
+    cancelModal?.addEventListener("click", hideModal);
+
+    modalOverlay?.addEventListener("click", (event) => {
+        if (event.target === modalOverlay) {
+            hideModal();
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            hideModal();
+        }
+    });
+
+
+    /* =========================
+       LEAD SEARCH
+    ========================= */
+
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+    const table = document.getElementById("leadsTable");
+
+    function filterLeads() {
+
+        if (!table) return;
+
+        const search =
+            searchInput.value.toLowerCase().trim();
+
+        const status =
+            statusFilter.value.toLowerCase();
+
+        const rows =
+            table.querySelectorAll("tbody tr");
+
+        rows.forEach(row => {
+
+            const text =
+                row.innerText.toLowerCase();
+
+            const matchesSearch =
+                !search || text.includes(search);
+
+            const matchesStatus =
+                !status || text.includes(status);
+
+            row.style.display =
+                matchesSearch && matchesStatus
+                    ? ""
+                    : "none";
+
+        });
+    }
+
+    searchInput?.addEventListener("input", filterLeads);
+    statusFilter?.addEventListener("change", filterLeads);
+
+
+    /* =========================
+       AUTO CLOSE SIDEBAR
+       ========================= */
+
+    document.querySelectorAll(".nav-item").forEach(item => {
+
+        item.addEventListener("click", () => {
+
+            if (window.innerWidth <= 900) {
+                sidebar.classList.remove("open");
+                sidebarOverlay.classList.remove("show");
+            }
+
+        });
+
+    });
+
+</script>
+
+</body>
+</html>

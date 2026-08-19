@@ -23,14 +23,80 @@ def init_db(db_path):
 
 
 def ensure_columns(db_path):
-    # Ensure optional columns exist for migrations: call_type, priority
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
+    cur.execute("PRAGMA table_info(clients)")
+    client_cols = [r[1] for r in cur.fetchall()]
+    client_columns = {
+        'email': 'TEXT',
+        'company': 'TEXT',
+        'job_title': 'TEXT',
+        'address': 'TEXT',
+        'city': 'TEXT',
+        'notes': 'TEXT',
+        'updated_at': 'DATETIME',
+    }
+    for name, definition in client_columns.items():
+        if name not in client_cols:
+            cur.execute(f'ALTER TABLE clients ADD COLUMN {name} {definition}')
+    if 'updated_at' not in client_cols:
+        cur.execute('UPDATE clients SET updated_at = created_at WHERE updated_at IS NULL')
+
     cur.execute("PRAGMA table_info(leads)")
     cols = [r[1] for r in cur.fetchall()]
-    if 'call_type' not in cols:
-        cur.execute("ALTER TABLE leads ADD COLUMN call_type TEXT DEFAULT 'Call'")
-    if 'priority' not in cols:
-        cur.execute("ALTER TABLE leads ADD COLUMN priority TEXT DEFAULT 'Normal'")
+    lead_columns = {
+        'call_type': "TEXT DEFAULT 'Call'",
+        'priority': "TEXT DEFAULT 'Normal'",
+        'source': "TEXT DEFAULT 'Direct'",
+        'source_detail': 'TEXT',
+        'description': 'TEXT',
+        'estimated_value': 'NUMERIC',
+        'currency': "TEXT DEFAULT 'INR'",
+        'probability': 'INTEGER DEFAULT 0',
+        'last_contacted_at': 'DATETIME',
+        'next_follow_up_at': 'DATETIME',
+        'converted_at': 'DATETIME',
+        'lost_reason': 'TEXT',
+        'owner': 'TEXT',
+    }
+    for name, definition in lead_columns.items():
+        if name not in cols:
+            cur.execute(f'ALTER TABLE leads ADD COLUMN {name} {definition}')
+
+    cur.executescript('''
+        CREATE TABLE IF NOT EXISTS lead_activities (
+            activity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lead_id INTEGER NOT NULL,
+            activity_type TEXT NOT NULL DEFAULT 'Note',
+            title TEXT,
+            details TEXT,
+            scheduled_for DATETIME,
+            completed_at DATETIME,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (lead_id) REFERENCES leads(lead_id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS tags (
+            tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            color TEXT DEFAULT '#64748b',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS lead_tags (
+            lead_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (lead_id, tag_id),
+            FOREIGN KEY (lead_id) REFERENCES leads(lead_id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email);
+        CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name);
+        CREATE INDEX IF NOT EXISTS idx_leads_priority ON leads(priority);
+        CREATE INDEX IF NOT EXISTS idx_leads_source ON leads(source);
+        CREATE INDEX IF NOT EXISTS idx_leads_updated_at ON leads(updated_at);
+        CREATE INDEX IF NOT EXISTS idx_leads_next_follow_up ON leads(next_follow_up_at);
+        CREATE INDEX IF NOT EXISTS idx_activities_lead_id ON lead_activities(lead_id);
+        CREATE INDEX IF NOT EXISTS idx_activities_scheduled_for ON lead_activities(scheduled_for);
+    ''')
     conn.commit()
     conn.close()

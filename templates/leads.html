@@ -1,31 +1,10 @@
 {% extends "base.html" %}
+{% block title %}All Leads{% endblock %}
+{% block page_title %}All leads{% endblock %}
+{% block page_subtitle %}Track every opportunity in your pipeline{% endblock %}
 {% block content %}
-  <h1>Leads</h1>
-  <table class="table">
-    <thead><tr><th>ID</th><th>Client</th><th>Mobile</th><th>Product</th><th>Status</th><th>Type</th><th>Priority</th><th>Call On</th><th>Updated</th><th>Notes</th><th>Actions</th></tr></thead>
-    <tbody>
-      {% for l in leads %}
-      <tr class="status-{{ l.status|replace(' ','-') }}">
-        <td>{{ l.lead_id }}</td>
-        <td>{{ l.name }}</td>
-        <td>{{ l.mobile }}</td>
-        <td>{{ l.product }}</td>
-        <td><span class="badge">{{ l.status }}</span></td>
-        <td><small class="muted">{{ l.call_type or 'Call' }}</small></td>
-        <td><small class="muted">{{ l.priority or 'Normal' }}</small></td>
-        <td>{{ l.call_on or '-' }}</td>
-        <td>{{ l.updated_at }}</td>
-        <td><span class="notes-preview" data-lead-id="{{ l.lead_id }}">{{ l.notes_count }} notes</span></td>
-        <td>
-          <a class="btn small" href="/lead/{{ l.lead_id }}">View</a>
-          <a class="btn small" href="/edit/{{ l.lead_id }}">Edit</a>
-          <form method="post" action="/delete/{{ l.lead_id }}" class="inline" onsubmit="return confirm('Delete this lead?');">
-            <button class="btn small danger" type="submit">Delete</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
+<div class="welcome"><div><h1>All leads</h1><p>Review, update, and move customer opportunities forward.</p></div><a class="btn btn-primary" href="{{ url_for('add_lead') }}">＋ Add new lead</a></div>
+<div class="card list-card"><div class="toolbar"><form class="search" action="{{ url_for('search') }}"><span>⌕</span><input name="name" placeholder="Search leads by client name..."></form><a class="btn btn-secondary btn-compact" href="{{ url_for('export_leads') }}">⇩ Export</a></div><div class="table-wrap"><table><thead><tr><th>Client</th><th>Product</th><th>Status</th><th>Priority</th><th>Follow-up</th><th>Updated</th><th>Notes</th><th></th></tr></thead><tbody>
+{% for lead in leads %}<tr><td><div class="client"><span class="client-avatar">{{ lead.name[:2].upper() }}</span><div><strong>{{ lead.name }}</strong>{% if lead.company %}<small>{{ lead.company }}</small>{% endif %}<small>{{ lead.mobile }}</small></div></div></td><td><strong class="product-name">{{ lead.product }}</strong>{% if lead.estimated_value %}<small class="muted">{{ lead.currency or 'INR' }} {{ lead.estimated_value }}</small>{% endif %}</td><td><span class="status status-{{ lead.status|lower|replace(' ', '-') }}">{{ lead.status }}</span></td><td><span class="priority {{ (lead.priority or 'Normal')|lower }}">{{ lead.priority or 'Normal' }}</span></td><td class="date">{{ lead.call_on or '—' }}</td><td class="date">{{ lead.updated_at[:10] if lead.updated_at else '—' }}</td><td>{{ lead.notes_count }}</td><td><a class="action-btn" href="{{ url_for('lead_detail', lead_id=lead.lead_id) }}" aria-label="View lead">→</a></td></tr>{% else %}<tr><td colspan="8" class="empty-state">◈<strong>No leads yet</strong><span>Add your first lead to get started.</span></td></tr>{% endfor %}
+</tbody></table></div></div>
 {% endblock %}

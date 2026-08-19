@@ -1,44 +1,22 @@
 {% extends "base.html" %}
+{% block title %}Lead #{{ lead.lead_id }}{% endblock %}
+{% block page_title %}Lead #{{ lead.lead_id }}{% endblock %}
+{% block page_subtitle %}{{ lead.product }} · {{ lead.status }}{% endblock %}
 {% block content %}
-  <h1>Lead #{{ lead.lead_id }} - {{ lead.product }}</h1>
-
-  <section class="card">
-    <h3>Client</h3>
-    <p><strong>{{ lead.name }}</strong><br/>{{ lead.mobile }}</p>
-  </section>
-
-  <section class="card">
-    <h3>Lead</h3>
-    <p>Product: {{ lead.product }}</p>
-    <p>Status: <span class="badge">{{ lead.status }}</span></p>
-    <p>Call On: {{ lead.call_on or '—' }}</p>
-    <p>Created: {{ lead.created_at }}</p>
-    <p>Updated: {{ lead.updated_at }}</p>
-    <a class="btn" href="/edit/{{ lead.lead_id }}">Edit Lead</a>
-  </section>
-
-  <section class="card">
-    <h3>Follow-Up History</h3>
-    {% if notes %}
-      <ul class="notes">
-        {% for n in notes %}
-          <li>
-            <div class="note-meta">{{ n.created_at }}</div>
-            <div class="note-body">{{ n.note }}</div>
-            <form method="post" action="/note/{{ n.note_id }}/delete" onsubmit="return confirm('Delete this note?');" style="margin-top:6px">
-              <button type="submit" class="btn small danger">Delete Note</button>
-            </form>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No notes.</p>
-    {% endif %}
-
-    <form method="post" action="/lead/{{ lead.lead_id }}/add_note" class="note-form">
-      <textarea name="note" rows="3" placeholder="Add follow-up note"></textarea>
-      <button class="btn" type="submit">Add Note</button>
-    </form>
-  </section>
-
+<div class="detail-heading"><div><div class="eyebrow">Opportunity</div><h1>{{ lead.product }}</h1><p>{{ lead.name }}{% if lead.company %} · {{ lead.company }}{% endif %}</p></div><div class="detail-actions"><a class="btn btn-secondary" href="{{ url_for('leads') }}">← Back</a><a class="btn btn-primary" href="{{ url_for('edit_lead', lead_id=lead.lead_id) }}">Edit lead</a></div></div>
+<div class="detail-layout">
+  <div class="detail-main">
+    <section class="card detail-card"><div class="card-header"><div><div class="card-title">Lead overview</div><div class="card-subtitle">The complete opportunity record</div></div><span class="status status-{{ lead.status|lower|replace(' ', '-') }}">{{ lead.status }}</span></div><div class="detail-grid">
+      <div><span class="detail-label">Client</span><strong>{{ lead.name }}</strong></div><div><span class="detail-label">Mobile</span><a class="detail-value-link" href="tel:{{ lead.mobile }}">{{ lead.mobile }}</a></div>
+      {% if lead.email %}<div><span class="detail-label">Email</span><a class="detail-value-link" href="mailto:{{ lead.email }}">{{ lead.email }}</a></div>{% endif %}{% if lead.company %}<div><span class="detail-label">Company</span><strong>{{ lead.company }}</strong></div>{% endif %}
+      <div><span class="detail-label">Product</span><strong>{{ lead.product }}</strong></div><div><span class="detail-label">Priority</span><span class="priority {{ (lead.priority or 'Normal')|lower }}">{{ lead.priority or 'Normal' }}</span></div>
+      <div><span class="detail-label">Lead source</span><strong>{{ lead.source or 'Direct' }}</strong></div><div><span class="detail-label">Owner</span><strong>{{ lead.owner or 'Unassigned' }}</strong></div>
+      <div><span class="detail-label">Estimated value</span><strong>{{ lead.currency or 'INR' }} {{ lead.estimated_value or '—' }}</strong></div><div><span class="detail-label">Probability</span><strong>{{ lead.probability or 0 }}%</strong></div>
+      <div><span class="detail-label">Follow-up date</span><strong>{{ lead.call_on or 'Not scheduled' }}</strong></div><div><span class="detail-label">Call type</span><strong>{{ lead.call_type or 'Call' }}</strong></div>
+    </div>{% if lead.description %}<div class="detail-description"><span class="detail-label">Description</span><p>{{ lead.description }}</p></div>{% endif %}</section>
+    <section class="card detail-card"><div class="card-header"><div><div class="card-title">Customer profile</div><div class="card-subtitle">Contact information and context</div></div></div><div class="detail-grid">{% if lead.job_title %}<div><span class="detail-label">Job title</span><strong>{{ lead.job_title }}</strong></div>{% endif %}{% if lead.city %}<div><span class="detail-label">City</span><strong>{{ lead.city }}</strong></div>{% endif %}{% if lead.address %}<div class="detail-wide"><span class="detail-label">Address</span><strong>{{ lead.address }}</strong></div>{% endif %}{% if lead.client_notes %}<div class="detail-wide"><span class="detail-label">Client notes</span><p>{{ lead.client_notes }}</p></div>{% endif %}</div></section>
+    <section class="card detail-card"><div class="card-header"><div><div class="card-title">Activity timeline</div><div class="card-subtitle">Changes and scheduled work on this lead</div></div></div>{% if activities %}<div class="activity-list">{% for activity in activities %}<div class="activity-item"><span class="activity-dot"></span><div><strong>{{ activity.title or activity.activity_type }}</strong><p>{{ activity.details or 'No additional details.' }}</p><small>{{ activity.created_at }}</small></div></div>{% endfor %}</div>{% else %}<div class="empty-state">◷<strong>No activities yet</strong><span>New activity will appear here.</span></div>{% endif %}</section>
+  </div>
+  <aside class="detail-rail"><section class="card detail-card followup-card"><div class="card-header"><div><div class="card-title">Add follow-up</div><div class="card-subtitle">Capture the next conversation</div></div></div><form class="followup-form" method="post" action="{{ url_for('add_note', lead_id=lead.lead_id) }}"><label>Follow-up note<textarea name="note" rows="5" placeholder="What happened or what comes next?"></textarea></label><button class="btn btn-primary" type="submit">＋ Add note</button></form></section><section class="card detail-card history-card"><div class="card-header"><div><div class="card-title">Follow-up history</div><div class="card-subtitle">{{ notes|length }} recorded notes</div></div></div>{% if notes %}<div class="history-list">{% for note in notes|reverse %}<article class="history-item"><div class="history-meta"><span>{{ note.created_at[:10] }}</span><form method="post" action="{{ url_for('delete_note', note_id=note.note_id) }}" data-confirm="Delete this note?"><button class="icon-btn" type="submit" aria-label="Delete note">×</button></form></div><p>{{ note.note }}</p></article>{% endfor %}</div>{% else %}<div class="empty-state">✎<strong>No follow-ups yet</strong><span>Add the first note above.</span></div>{% endif %}</section></aside>
+</div>
 {% endblock %}

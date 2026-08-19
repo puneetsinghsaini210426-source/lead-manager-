@@ -1,44 +1,40 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Lead Manager</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-  </head>
-  <body>
-    <nav class="nav">
-      <div class="nav-left">
-        <div class="brand"><a href="/">Lead Manager</a></div>
-        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">☰</button>
-      </div>
-      <div class="nav-right">
-        <ul class="nav-links">
-          <li><a href="/">Dashboard</a></li>
-          <li><a href="/leads">Leads</a></li>
-          <li><a href="/calls">Calls</a></li>
-          <li><a href="/add">Add Lead</a></li>
-          <li><a href="/search">Search</a></li>
-          <li><a href="/export">Export</a></li>
-          <li><a href="/import">Import</a></li>
-        </ul>
-      </div>
-    </nav>
-
-    <main class="container">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="flashes">
-            {% for category, msg in messages %}
-              <div class="flash {{category}}">{{msg}}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
-
-      {% block content %}{% endblock %}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LeadFlow{% endblock %} | LeadFlow CRM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><a class="brand-mark" href="{{ url_for('dashboard') }}">L</a><div><a class="brand-name" href="{{ url_for('dashboard') }}">LeadFlow</a><span class="brand-sub">CLIENT MANAGEMENT</span></div></div>
+      <nav class="sidebar-nav">
+        <div class="nav-label">Workspace</div>
+        <a class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><span>⌂</span>Dashboard</a>
+        <a class="nav-item {% if request.endpoint in ['leads', 'lead_detail', 'edit_lead'] %}active{% endif %}" href="{{ url_for('leads') }}"><span>◈</span>All Leads</a>
+        <a class="nav-item {% if request.endpoint == 'add_lead' %}active{% endif %}" href="{{ url_for('add_lead') }}"><span>＋</span>Add Lead</a>
+        <div class="nav-label">Follow-ups</div>
+        <a class="nav-item {% if request.endpoint == 'calls' %}active{% endif %}" href="{{ url_for('calls') }}"><span>◷</span>Calls</a>
+        <a class="nav-item" href="{{ url_for('calls', filter='overdue') }}"><span>!</span>Overdue</a>
+        <div class="nav-label">Management</div>
+        <a class="nav-item {% if request.endpoint == 'search' %}active{% endif %}" href="{{ url_for('search') }}"><span>⌕</span>Search</a>
+        <a class="nav-item" href="{{ url_for('import_leads') }}"><span>⇧</span>Import</a>
+        <a class="nav-item" href="{{ url_for('export_leads') }}"><span>⇩</span>Export</a>
+        <a class="nav-item" href="{{ url_for('list_backups') }}"><span>▣</span>Backups</a>
+      </nav>
+      <div class="sidebar-footer"><div class="avatar">AD</div><div><strong>Administrator</strong><small>Lead Manager</small></div></div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <main class="main-shell">
+      <header class="topbar"><div class="topbar-left"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Open navigation">☰</button><div><div class="page-title">{% block page_title %}LeadFlow{% endblock %}</div><div class="page-subtitle">{% block page_subtitle %}Keep every opportunity moving{% endblock %}</div></div></div><div class="topbar-actions"><a class="icon-btn" href="{{ url_for('search') }}" aria-label="Search">⌕</a><a class="btn btn-primary btn-compact" href="{{ url_for('add_lead') }}">＋ Add lead</a></div></header>
+      <section class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-stack">{% for category, msg in messages %}<div class="flash {{ category }}">{{ msg }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+        {% block content %}{% endblock %}
+      </section>
     </main>
-
-    <script src="/static/js/app.js"></script>
-  </body>
+  </div>
+  <script src="{{ url_for('static', filename='js/app.js') }}?v=3"></script>
+</body>
 </html>

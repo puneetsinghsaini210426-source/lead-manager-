@@ -10,12 +10,17 @@ import shutil
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET', 'devsecret')
 
-DB_PATH = os.path.join('database', 'leads.db')
-BACKUP_DIR = 'backups'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.environ.get('DATA_DIR', os.path.join(BASE_DIR, 'database'))
+DB_PATH = os.environ.get('DATABASE_PATH', os.path.join(DATA_DIR, 'leads.db'))
+BACKUP_DIR = os.environ.get('BACKUP_DIR', os.path.join(DATA_DIR, 'backups'))
+STATUSES = ['New', 'Contacted', 'Interested', 'Quotation Sent', 'Negotiating', 'Converted', 'Not Interested', 'Lost']
+CALL_TYPES = ['Call', 'Meet']
+PRIORITIES = ['Low', 'Normal', 'High']
 
 
 def setup():
-    os.makedirs('database', exist_ok=True)
+    os.makedirs(os.path.dirname(DB_PATH) or '.', exist_ok=True)
     os.makedirs(BACKUP_DIR, exist_ok=True)
     init_db(DB_PATH)
     # ensure schema migrations (add columns) on existing DBs
@@ -32,6 +37,22 @@ def parse_date(s):
         return datetime.strptime(s, '%Y-%m-%d').date()
     except ValueError:
         return None
+
+
+def parse_number(s):
+    if s is None or (isinstance(s, float) and pd.isna(s)) or str(s).strip() == '':
+        return None
+    try:
+        return float(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def clean_optional(s):
+    if s is None or (isinstance(s, float) and pd.isna(s)):
+        return None
+    value = str(s or '').strip()
+    return value or None
 
 
 @app.route('/')
@@ -59,7 +80,17 @@ def dashboard():
     cur.execute('SELECT COUNT(*) FROM leads WHERE call_on = ?', (tomorrow.isoformat(),))
     stats['calls_tomorrow'] = cur.fetchone()[0]
 
-    return render_template('dashboard.html', stats=stats)
+    cur.execute('''
+        SELECT l.lead_id, c.name, c.company, c.mobile, l.product, l.status, l.call_on,
+               l.priority, l.updated_at
+        FROM leads l
+        JOIN clients c ON c.client_id = l.client_id
+        ORDER BY l.updated_at DESC
+        LIMIT 8
+    ''')
+    recent_leads = cur.fetchall()
+
+    return render_template('dashboard.html', stats=stats, leads=recent_leads)
 
 
 @app.route('/leads')
@@ -67,7 +98,8 @@ def leads():
     db = get_db(DB_PATH)
     cur = db.cursor()
     cur.execute('''
-        SELECT l.lead_id, c.name, c.mobile, l.product, l.status, l.call_on, l.call_type, l.priority, l.updated_at,
+         SELECT l.lead_id, c.name, c.mobile, c.email, c.company, l.product, l.status, l.call_on,
+             l.call_type, l.priority, l.source, l.estimated_value, l.probability, l.owner, l.updated_at,
                (SELECT COUNT(*) FROM follow_up_notes n WHERE n.lead_id = l.lead_id) as notes_count
         FROM leads l
         JOIN clients c ON c.client_id = l.client_id
@@ -82,7 +114,11 @@ def lead_detail(lead_id):
     db = get_db(DB_PATH)
     cur = db.cursor()
     cur.execute('''
-        SELECT l.*, c.name, c.mobile FROM leads l JOIN clients c ON c.client_id = l.client_id WHERE l.lead_id = ?
+        SELECT l.*, c.name, c.mobile, c.email, c.company, c.job_title, c.address, c.city,
+               c.notes AS client_notes
+        FROM leads l
+        JOIN clients c ON c.client_id = l.client_id
+        WHERE l.lead_id = ?
     ''', (lead_id,))
     lead = cur.fetchone()
     if not lead:
@@ -90,7 +126,41 @@ def lead_detail(lead_id):
         return redirect(url_for('leads'))
     cur.execute('SELECT * FROM follow_up_notes WHERE lead_id = ? ORDER BY created_at ASC', (lead_id,))
     notes = cur.fetchall()
-    return render_template('lead_detail.html', lead=lead, notes=notes)
+    cur.execute('SELECT * FROM lead_activities WHERE lead_id = ? ORDER BY created_at ASC', (lead_id,))
+    activities = cur.fetchall()
+    cur.execute('''
+        SELECT t.* FROM tags t
+        JOIN lead_tags lt ON lt.tag_id = t.tag_id
+        WHERE lt.lead_id = ? ORDER BY t.name
+    ''', (lead_id,))
+    tags = cur.fetchall()
+    return render_template('lead_detail.html', lead=lead, notes=notes, activities=activities, tags=tags)
+
+
+@app.route('/lead/<int:lead_id>/activities', methods=['GET', 'POST'])
+def lead_activities(lead_id):
+    db = get_db(DB_PATH)
+    cur = db.cursor()
+    cur.execute('SELECT lead_id FROM leads WHERE lead_id = ?', (lead_id,))
+    if not cur.fetchone():
+        return {'error': 'Lead not found'}, 404
+    if request.method == 'POST':
+        activity_type = clean_optional(request.form.get('activity_type')) or 'Note'
+        title = clean_optional(request.form.get('title'))
+        details = clean_optional(request.form.get('details'))
+        scheduled_for = clean_optional(request.form.get('scheduled_for'))
+        completed_at = clean_optional(request.form.get('completed_at'))
+        cur.execute('''
+            INSERT INTO lead_activities
+                (lead_id, activity_type, title, details, scheduled_for, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (lead_id, activity_type, title, details, scheduled_for, completed_at))
+        cur.execute('UPDATE leads SET updated_at = ? WHERE lead_id = ?', (datetime.utcnow().isoformat(), lead_id))
+        db.commit()
+        flash('Activity added', 'success')
+        return redirect(url_for('lead_detail', lead_id=lead_id))
+    cur.execute('SELECT * FROM lead_activities WHERE lead_id = ? ORDER BY created_at DESC', (lead_id,))
+    return {'activities': [dict(activity) for activity in cur.fetchall()]}
 
 
 @app.route('/lead/<int:lead_id>/notes_json')
@@ -108,15 +178,31 @@ def lead_notes_json(lead_id):
 def add_lead():
     db = get_db(DB_PATH)
     cur = db.cursor()
-    statuses = ['New','Contacted','Interested','Quotation Sent','Negotiating','Converted','Not Interested','Lost']
+    statuses = STATUSES
     if request.method == 'POST':
         name = request.form.get('name','').strip()
         mobile = request.form.get('mobile','').strip()
+        email = clean_optional(request.form.get('email'))
+        company = clean_optional(request.form.get('company'))
+        job_title = clean_optional(request.form.get('job_title'))
+        address = clean_optional(request.form.get('address'))
+        city = clean_optional(request.form.get('city'))
+        client_notes = clean_optional(request.form.get('client_notes'))
         product = request.form.get('product','').strip()
         status = request.form.get('status')
         call_type = request.form.get('call_type','Call')
         priority = request.form.get('priority','Normal')
+        source = clean_optional(request.form.get('source')) or 'Direct'
+        source_detail = clean_optional(request.form.get('source_detail'))
+        description = clean_optional(request.form.get('description'))
+        estimated_value = parse_number(request.form.get('estimated_value'))
+        currency = clean_optional(request.form.get('currency')) or 'INR'
+        probability_text = request.form.get('probability', '0').strip() or '0'
+        owner = clean_optional(request.form.get('owner'))
+        lost_reason = clean_optional(request.form.get('lost_reason'))
         call_on = parse_date(request.form.get('call_on'))
+        last_contacted_at = clean_optional(request.form.get('last_contacted_at'))
+        next_follow_up_at = clean_optional(request.form.get('next_follow_up_at'))
         note = request.form.get('note','').strip()
         errors = []
         if not name:
@@ -127,6 +213,13 @@ def add_lead():
             errors.append('Product is required')
         if status not in statuses:
             errors.append('Invalid status')
+        try:
+            probability = int(probability_text)
+            if not 0 <= probability <= 100:
+                raise ValueError
+        except ValueError:
+            probability = 0
+            errors.append('Probability must be between 0 and 100')
         if errors:
             for e in errors:
                 flash(e, 'danger')
@@ -137,15 +230,30 @@ def add_lead():
         r = cur.fetchone()
         if r:
             client_id = r[0]
+            cur.execute('''
+                UPDATE clients
+                SET name = ?, email = ?, company = ?, job_title = ?, address = ?, city = ?, notes = ?, updated_at = ?
+                WHERE client_id = ?
+            ''', (name, email, company, job_title, address, city, client_notes, datetime.utcnow().isoformat(), client_id))
         else:
             created_at = datetime.utcnow().isoformat()
-            cur.execute('INSERT INTO clients (name,mobile,created_at) VALUES (?,?,?)', (name,mobile,created_at))
+            cur.execute('''
+                INSERT INTO clients (name, mobile, email, company, job_title, address, city, notes, created_at, updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+            ''', (name, mobile, email, company, job_title, address, city, client_notes, created_at, created_at))
             client_id = cur.lastrowid
 
         now = datetime.utcnow().isoformat()
         call_on_val = call_on.isoformat() if call_on else None
-        cur.execute('INSERT INTO leads (client_id,product,status,call_on,call_type,priority,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)',
-                (client_id, product, status, call_on_val, call_type, priority, now, now))
+        cur.execute('''
+            INSERT INTO leads (
+                client_id, product, status, call_on, call_type, priority, source, source_detail,
+                description, estimated_value, currency, probability, last_contacted_at,
+                next_follow_up_at, lost_reason, owner, created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ''', (client_id, product, status, call_on_val, call_type, priority, source, source_detail,
+              description, estimated_value, currency, probability, last_contacted_at,
+              next_follow_up_at, lost_reason, owner, now, now))
         lead_id = cur.lastrowid
         if note:
             cur.execute('INSERT INTO follow_up_notes (lead_id,note,created_at) VALUES (?,?,?)', (lead_id,note,now))
@@ -160,7 +268,7 @@ def add_lead():
 def edit_lead(lead_id):
     db = get_db(DB_PATH)
     cur = db.cursor()
-    statuses = ['New','Contacted','Interested','Quotation Sent','Negotiating','Converted','Not Interested','Lost']
+    statuses = STATUSES
     cur.execute('SELECT l.*, c.name, c.mobile FROM leads l JOIN clients c ON c.client_id = l.client_id WHERE l.lead_id = ?', (lead_id,))
     lead = cur.fetchone()
     if not lead:
@@ -172,9 +280,25 @@ def edit_lead(lead_id):
         status = request.form.get('status')
         call_type = request.form.get('call_type','Call')
         priority = request.form.get('priority','Normal')
+        source = clean_optional(request.form.get('source')) or 'Direct'
+        source_detail = clean_optional(request.form.get('source_detail'))
+        description = clean_optional(request.form.get('description'))
+        estimated_value = parse_number(request.form.get('estimated_value'))
+        currency = clean_optional(request.form.get('currency')) or 'INR'
+        probability_text = request.form.get('probability', '0').strip() or '0'
+        owner = clean_optional(request.form.get('owner'))
+        lost_reason = clean_optional(request.form.get('lost_reason'))
         call_on = parse_date(request.form.get('call_on'))
+        last_contacted_at = clean_optional(request.form.get('last_contacted_at'))
+        next_follow_up_at = clean_optional(request.form.get('next_follow_up_at'))
         client_name = request.form.get('name','').strip()
         client_mobile = request.form.get('mobile','').strip()
+        email = clean_optional(request.form.get('email'))
+        company = clean_optional(request.form.get('company'))
+        job_title = clean_optional(request.form.get('job_title'))
+        address = clean_optional(request.form.get('address'))
+        city = clean_optional(request.form.get('city'))
+        client_notes = clean_optional(request.form.get('client_notes'))
         errors = []
         if not client_name:
             errors.append('Client name is required')
@@ -184,16 +308,35 @@ def edit_lead(lead_id):
             errors.append('Product is required')
         if status not in statuses:
             errors.append('Invalid status')
+        try:
+            probability = int(probability_text)
+            if not 0 <= probability <= 100:
+                raise ValueError
+        except ValueError:
+            probability = 0
+            errors.append('Probability must be between 0 and 100')
         if errors:
             for e in errors:
                 flash(e,'danger')
             return render_template('edit_lead.html', lead=lead, statuses=statuses)
 
-        # update client
-        cur.execute('UPDATE clients SET name = ?, mobile = ? WHERE client_id = ?', (client_name, client_mobile, lead['client_id']))
         now = datetime.utcnow().isoformat()
+        cur.execute('''
+            UPDATE clients
+            SET name = ?, mobile = ?, email = ?, company = ?, job_title = ?, address = ?, city = ?, notes = ?, updated_at = ?
+            WHERE client_id = ?
+        ''', (client_name, client_mobile, email, company, job_title, address, city, client_notes, now, lead['client_id']))
         call_on_val = call_on.isoformat() if call_on else None
-        cur.execute('UPDATE leads SET product = ?, status = ?, call_on = ?, call_type = ?, priority = ?, updated_at = ? WHERE lead_id = ?', (product, status, call_on_val, call_type, priority, now, lead_id))
+        converted_at = now if status == 'Converted' and lead['status'] != 'Converted' else lead['converted_at']
+        cur.execute('''
+            UPDATE leads
+            SET product = ?, status = ?, call_on = ?, call_type = ?, priority = ?, source = ?, source_detail = ?,
+                description = ?, estimated_value = ?, currency = ?, probability = ?, last_contacted_at = ?,
+                next_follow_up_at = ?, converted_at = ?, lost_reason = ?, owner = ?, updated_at = ?
+            WHERE lead_id = ?
+        ''', (product, status, call_on_val, call_type, priority, source, source_detail,
+              description, estimated_value, currency, probability, last_contacted_at,
+              next_follow_up_at, converted_at, lost_reason, owner, now, lead_id))
         db.commit()
         flash('Lead updated', 'success')
         return redirect(url_for('lead_detail', lead_id=lead_id))
@@ -256,15 +399,20 @@ def search():
     cur = db.cursor()
     name = request.args.get('name','').strip()
     mobile = request.args.get('mobile','').strip()
+    email = request.args.get('email','').strip()
+    company = request.args.get('company','').strip()
     product = request.args.get('product','').strip()
     status = request.args.get('status','').strip()
     call_on = request.args.get('call_on','').strip()
     call_type = request.args.get('call_type','').strip()
     priority = request.args.get('priority','').strip()
+    source = request.args.get('source','').strip()
+    owner = request.args.get('owner','').strip()
     lead_id = request.args.get('lead_id','').strip()
 
     query = '''
-        SELECT l.lead_id, c.name, c.mobile, l.product, l.status, l.call_on, l.updated_at,
+         SELECT l.lead_id, c.name, c.mobile, c.email, c.company, l.product, l.status, l.call_on,
+             l.call_type, l.priority, l.source, l.estimated_value, l.probability, l.owner, l.updated_at,
                (SELECT COUNT(*) FROM follow_up_notes n WHERE n.lead_id = l.lead_id) as notes_count
         FROM leads l JOIN clients c ON c.client_id = l.client_id
         WHERE 1=1
@@ -276,6 +424,12 @@ def search():
     if mobile:
         query += ' AND c.mobile LIKE ?'
         params.append(f'%{mobile}%')
+    if email:
+        query += ' AND c.email LIKE ?'
+        params.append(f'%{email}%')
+    if company:
+        query += ' AND c.company LIKE ?'
+        params.append(f'%{company}%')
     if product:
         query += ' AND l.product LIKE ?'
         params.append(f'%{product}%')
@@ -291,13 +445,19 @@ def search():
     if priority:
         query += ' AND l.priority = ?'
         params.append(priority)
+    if source:
+        query += ' AND l.source = ?'
+        params.append(source)
+    if owner:
+        query += ' AND l.owner = ?'
+        params.append(owner)
     if lead_id:
         query += ' AND l.lead_id = ?'
         params.append(lead_id)
     query += ' ORDER BY l.updated_at DESC'
     cur.execute(query, tuple(params))
     rows = cur.fetchall()
-    statuses = ['New','Contacted','Interested','Quotation Sent','Negotiating','Converted','Not Interested','Lost']
+    statuses = STATUSES
     return render_template('search.html', leads=rows, statuses=statuses, form=request.args)
 
 
@@ -394,7 +554,8 @@ def export_leads():
     db = get_db(DB_PATH)
     cur = db.cursor()
     cur.execute('''
-        SELECT l.lead_id, c.name as client_name, c.mobile as client_mobile, l.product, l.status, l.call_on, l.call_type, l.priority, l.created_at, l.updated_at
+         SELECT l.*, c.name as client_name, c.mobile as client_mobile, c.email as client_email,
+             c.company as client_company, c.job_title, c.address, c.city, c.notes as client_notes
         FROM leads l JOIN clients c ON c.client_id = l.client_id
         ORDER BY l.lead_id
     ''')
@@ -410,21 +571,47 @@ def export_leads():
             'lead_id': r['lead_id'],
             'client_name': r['client_name'],
             'client_mobile': r['client_mobile'],
+            'client_email': r['client_email'],
+            'client_company': r['client_company'],
+            'job_title': r['job_title'],
+            'address': r['address'],
+            'city': r['city'],
+            'client_notes': r['client_notes'],
             'product': r['product'],
             'status': r['status'],
             'call_on': r['call_on'],
             'call_type': r['call_type'],
             'priority': r['priority'],
+            'source': r['source'],
+            'source_detail': r['source_detail'],
+            'description': r['description'],
+            'estimated_value': r['estimated_value'],
+            'currency': r['currency'],
+            'probability': r['probability'],
+            'last_contacted_at': r['last_contacted_at'],
+            'next_follow_up_at': r['next_follow_up_at'],
+            'converted_at': r['converted_at'],
+            'lost_reason': r['lost_reason'],
+            'owner': r['owner'],
             'created_at': r['created_at'],
             'updated_at': r['updated_at'],
             'notes': notes_text
         })
     df = pd.DataFrame(data)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='leads')
-    output.seek(0)
-    return send_file(output, download_name='leads_export.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # Try to write Excel using openpyxl; if not available, fall back to CSV
+    try:
+        import openpyxl  # noqa: F401
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='leads')
+        output.seek(0)
+        return send_file(output, download_name='leads_export.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    except ModuleNotFoundError:
+        # Fallback: CSV export
+        csv_buf = io.StringIO()
+        df.to_csv(csv_buf, index=False)
+        csv_bytes = csv_buf.getvalue().encode('utf-8')
+        return send_file(io.BytesIO(csv_bytes), download_name='leads_export.csv', as_attachment=True, mimetype='text/csv')
 
 
 @app.route('/import', methods=['GET','POST'])
@@ -450,6 +637,12 @@ def import_leads():
     for _, row in df.iterrows():
         name = str(row.get('client_name') or row.get('name') or '').strip()
         mobile = str(row.get('client_mobile') or row.get('mobile') or '').strip()
+        email = clean_optional(row.get('client_email') or row.get('email'))
+        company = clean_optional(row.get('client_company') or row.get('company'))
+        job_title = clean_optional(row.get('job_title'))
+        address = clean_optional(row.get('address'))
+        city = clean_optional(row.get('city'))
+        client_notes = clean_optional(row.get('client_notes'))
         product = str(row.get('product') or '').strip()
         status = str(row.get('status') or 'New').strip()
         call_on = row.get('call_on')
@@ -465,6 +658,19 @@ def import_leads():
                 call_on_val = str(call_on)
         call_type = str(row.get('call_type') or 'Call')
         priority = str(row.get('priority') or 'Normal')
+        source = str(row.get('source') or 'Direct').strip()
+        source_detail = clean_optional(row.get('source_detail'))
+        description = clean_optional(row.get('description'))
+        estimated_value = parse_number(row.get('estimated_value'))
+        currency = str(row.get('currency') or 'INR').strip()
+        try:
+            probability = max(0, min(100, int(row.get('probability') or 0)))
+        except (TypeError, ValueError):
+            probability = 0
+        last_contacted_at = clean_optional(row.get('last_contacted_at'))
+        next_follow_up_at = clean_optional(row.get('next_follow_up_at'))
+        lost_reason = clean_optional(row.get('lost_reason'))
+        owner = clean_optional(row.get('owner'))
         note = str(row.get('notes') or '')
         if not name or not mobile or not product:
             continue
@@ -472,12 +678,28 @@ def import_leads():
         r = cur.fetchone()
         if r:
             client_id = r['client_id']
+            cur.execute('''
+                UPDATE clients
+                SET name = ?, email = ?, company = ?, job_title = ?, address = ?, city = ?, notes = ?, updated_at = ?
+                WHERE client_id = ?
+            ''', (name, email, company, job_title, address, city, client_notes, datetime.utcnow().isoformat(), client_id))
         else:
             created_at = datetime.utcnow().isoformat()
-            cur.execute('INSERT INTO clients (name,mobile,created_at) VALUES (?,?,?)', (name,mobile,created_at))
+            cur.execute('''
+                INSERT INTO clients (name, mobile, email, company, job_title, address, city, notes, created_at, updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+            ''', (name, mobile, email, company, job_title, address, city, client_notes, created_at, created_at))
             client_id = cur.lastrowid
         now = datetime.utcnow().isoformat()
-        cur.execute('INSERT INTO leads (client_id,product,status,call_on,call_type,priority,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)', (client_id,product,status,call_on_val,call_type,priority,now,now))
+        cur.execute('''
+            INSERT INTO leads (
+                client_id, product, status, call_on, call_type, priority, source, source_detail,
+                description, estimated_value, currency, probability, last_contacted_at,
+                next_follow_up_at, lost_reason, owner, created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ''', (client_id, product, status, call_on_val, call_type, priority, source, source_detail,
+              description, estimated_value, currency, probability, last_contacted_at,
+              next_follow_up_at, lost_reason, owner, now, now))
         lead_id = cur.lastrowid
         if note and note.strip():
             # split imported notes on double newlines if present
@@ -509,6 +731,6 @@ def restore():
 
 if __name__ == '__main__':
     # Bind to 0.0.0.0 and use PORT env var so PaaS (Render) can route traffic.
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
     debug = os.environ.get('FLASK_DEBUG', '0') in ('1', 'true', 'True')
     app.run(host='0.0.0.0', port=port, debug=debug)

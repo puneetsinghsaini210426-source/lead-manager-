@@ -1,10 +1,7 @@
 {% extends "base.html" %}
+{% block title %}Import Leads{% endblock %}
+{% block page_title %}Import leads{% endblock %}
+{% block page_subtitle %}Bring customer opportunities into LeadFlow in one step{% endblock %}
 {% block content %}
-  <h1>Import Leads</h1>
-  <p>Upload a CSV or Excel file. Columns supported: <strong>client_name</strong> (or <strong>name</strong>), <strong>client_mobile</strong> (or <strong>mobile</strong>), <strong>product</strong>, <strong>status</strong>, <strong>call_on</strong>, <strong>call_type</strong>, <strong>priority</strong>, <strong>notes</strong></p>
-  <form method="post" enctype="multipart/form-data">
-    <label>Select file<input type="file" name="file" accept=".csv,.xls,.xlsx" required></label>
-    <button class="btn" type="submit">Import</button>
-  </form>
-
+<div class="operations-grid"><section class="card operation-card"><div class="operation-icon icon-purple">⇧</div><h1>Import a lead file</h1><p>Upload a CSV or Excel file to add leads in bulk. Existing clients are matched by mobile number.</p><form method="post" enctype="multipart/form-data" class="upload-form"><label class="file-drop"><span>Choose a CSV or Excel file</span><small>.csv, .xls, or .xlsx</small><input type="file" name="file" accept=".csv,.xls,.xlsx" required></label><button class="btn btn-primary" type="submit">Import leads</button></form></section><section class="card operation-card"><div class="operation-icon icon-blue">▣</div><h2>Supported columns</h2><p>Use these headers to map your data. Only client name, mobile, and product are required.</p><div class="column-list"><span>client_name / name</span><span>client_mobile / mobile</span><span>product</span><span>status · priority · call_type</span><span>call_on · source · owner</span><span>estimated_value · probability</span><span>notes · description</span></div><a class="view-link" href="{{ url_for('export_leads') }}">Download an example export →</a></section></div>
 {% endblock %}

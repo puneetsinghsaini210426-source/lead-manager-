@@ -1,31 +1,15 @@
 {% extends "base.html" %}
+{% block title %}Edit Lead{% endblock %}
+{% block page_title %}Edit lead #{{ lead.lead_id }}{% endblock %}
+{% block page_subtitle %}Keep the opportunity and customer record current{% endblock %}
 {% block content %}
-  <h1>Edit Lead #{{ lead.lead_id }}</h1>
-  <form method="post" class="form">
-    <label>Client name<input name="name" value="{{ lead.name }}" required></label>
-    <label>Mobile<input name="mobile" value="{{ lead.mobile }}" required></label>
-    <label>Product<input name="product" value="{{ lead.product }}" required></label>
-    <label>Status
-      <select name="status">
-        {% for s in statuses %}
-          <option value="{{s}}" {% if s==lead.status %}selected{% endif %}>{{s}}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>Type
-      <select name="call_type">
-        <option value="Call" {% if lead.call_type=='Call' %}selected{% endif %}>Call</option>
-        <option value="Meet" {% if lead.call_type=='Meet' %}selected{% endif %}>Meet</option>
-      </select>
-    </label>
-    <label>Priority
-      <select name="priority">
-        <option value="Low" {% if lead.priority=='Low' %}selected{% endif %}>Low</option>
-        <option value="Normal" {% if lead.priority=='Normal' %}selected{% endif %}>Normal</option>
-        <option value="High" {% if lead.priority=='High' %}selected{% endif %}>High</option>
-      </select>
-    </label>
-    <label>Call On<input type="date" name="call_on" value="{{ lead.call_on }}"></label>
-    <button class="btn" type="submit">Save</button>
-  </form>
+<div class="form-page"><div class="card form-card"><form method="post"><div class="form-grid">
+<div class="form-group"><label>Client name *</label><input name="name" value="{{ lead.name }}" required></div><div class="form-group"><label>Mobile number *</label><input name="mobile" value="{{ lead.mobile }}" required></div>
+<div class="form-group"><label>Email</label><input type="email" name="email" value="{{ lead.email or '' }}"></div><div class="form-group"><label>Company</label><input name="company" value="{{ lead.company or '' }}"></div>
+<div class="form-group"><label>Job title</label><input name="job_title" value="{{ lead.job_title or '' }}"></div><div class="form-group"><label>City</label><input name="city" value="{{ lead.city or '' }}"></div><div class="form-group full"><label>Address</label><input name="address" value="{{ lead.address or '' }}"></div>
+<div class="form-group"><label>Product *</label><input name="product" value="{{ lead.product }}" required></div><div class="form-group"><label>Status *</label><select name="status" required>{% for s in statuses %}<option value="{{ s }}" {% if s == lead.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Priority</label><select name="priority">{% for value in ['Low','Normal','High'] %}<option {% if lead.priority == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></div><div class="form-group"><label>Call type</label><select name="call_type"><option {% if lead.call_type == 'Call' %}selected{% endif %}>Call</option><option {% if lead.call_type == 'Meet' %}selected{% endif %}>Meet</option></select></div>
+<div class="form-group"><label>Follow-up date</label><input type="date" name="call_on" value="{{ lead.call_on or '' }}"></div><div class="form-group"><label>Lead source</label><input name="source" value="{{ lead.source or '' }}"></div><div class="form-group"><label>Estimated value</label><input type="number" name="estimated_value" value="{{ lead.estimated_value or '' }}" min="0" step="0.01"></div><div class="form-group"><label>Probability (%)</label><input type="number" name="probability" value="{{ lead.probability or 0 }}" min="0" max="100"></div><div class="form-group"><label>Owner</label><input name="owner" value="{{ lead.owner or '' }}"></div>
+<div class="form-group full"><label>Description</label><textarea name="description">{{ lead.description or '' }}</textarea></div>
+</div><div class="form-actions"><a class="btn btn-secondary" href="{{ url_for('lead_detail', lead_id=lead.lead_id) }}">Cancel</a><button class="btn btn-primary" type="submit">Save changes</button></div></form></div></div>
 {% endblock %}

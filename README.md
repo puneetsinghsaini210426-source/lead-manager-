@@ -2,6 +2,28 @@
 
 Simple local Lead Management app.
 
+## Production data storage
+
+The app uses one server-side database. Leads are not tied to a browser, laptop, or phone.
+For Render, do not rely on the default project directory for production data: Render's
+service filesystem is ephemeral and can be reset after a redeploy or restart. Attach a
+persistent disk to the service, for example mounted at `/var/data`, and set these
+environment variables:
+
+```text
+DATA_DIR=/var/data
+DATABASE_PATH=/var/data/leads.db
+BACKUP_DIR=/var/data/backups
+```
+
+After deploying with the persistent disk, all devices using the same service URL will
+read and write the same database. Export the current local leads before deployment and
+use the Import page after deployment if the hosted database starts empty.
+
+SQLite is suitable for one Render service instance with a persistent disk. If you scale
+to multiple instances, migrate to a managed PostgreSQL database instead; separate
+instances must not share a SQLite file over a network filesystem.
+
 Setup
 
 1. Create a virtualenv and install deps:
@@ -18,7 +40,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-3. Open http://127.0.0.1:5000 in your browser.
+3. Open http://127.0.0.1:5001 in your browser (app defaults to port 5001 locally).
 
 Files
 

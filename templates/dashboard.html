@@ -1,22 +1,9 @@
 {% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of your sales activity{% endblock %}
 {% block content %}
-  <h1>Dashboard</h1>
-  <div class="grid">
-    <div class="card">Total Leads<br/><strong>{{stats.total_leads}}</strong></div>
-    <div class="card">New Leads<br/><strong>{{stats.new_leads}}</strong></div>
-    <div class="card">Interested<br/><strong>{{stats.interested_leads}}</strong></div>
-    <div class="card">Converted<br/><strong>{{stats.converted_leads}}</strong></div>
-    <div class="card">Lost<br/><strong>{{stats.lost_leads}}</strong></div>
-    <div class="card">Calls Today<br/><strong>{{stats.calls_today}}</strong></div>
-    <div class="card">Overdue Calls<br/><strong class="overdue">{{stats.overdue_calls}}</strong></div>
-    <div class="card">Calls Tomorrow<br/><strong>{{stats.calls_tomorrow}}</strong></div>
-  </div>
-
-  <div class="actions">
-    <a class="btn" href="/add">Add Lead</a>
-    <a class="btn" href="/calls?filter=today">Today's Calls</a>
-    <a class="btn" href="/leads">All Leads</a>
-    <a class="btn" href="/search">Search</a>
-  </div>
-
+<div class="welcome"><div><h1>Good evening</h1><p>Here's what's happening with your leads today.</p></div><a class="btn btn-primary" href="{{ url_for('add_lead') }}">＋ Add new lead</a></div>
+<div class="stats-grid">{% set cards = [('Total Leads', stats.total_leads, '◈', 'icon-purple', 'Active pipeline'), ('New Leads', stats.new_leads, '✦', 'icon-blue', 'Awaiting contact'), ('Interested', stats.interested_leads, '♥', 'icon-green', 'High potential'), ('Converted', stats.converted_leads, '✓', 'icon-orange', 'Successful deals'), ('Lost', stats.lost_leads, '×', 'icon-red', 'Closed leads')] %}{% for label, value, icon, color, hint in cards %}<div class="stat-card"><div class="stat-top"><span class="stat-label">{{ label }}</span><span class="stat-icon {{ color }}">{{ icon }}</span></div><div class="stat-number">{{ value }}</div><div class="stat-change">{{ hint }}</div></div>{% endfor %}</div>
+<div class="dashboard-grid"><div class="card"><div class="card-header"><div><div class="card-title">Recent leads</div><div class="card-subtitle">Recently updated customer opportunities</div></div><a class="view-link" href="{{ url_for('leads') }}">View all →</a></div><div class="toolbar"><label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="Search clients, products..."></label><select id="statusFilter" class="filter"><option value="">All statuses</option>{% for status in ['New','Contacted','Interested','Quotation Sent','Negotiating','Converted','Not Interested','Lost'] %}<option>{{ status }}</option>{% endfor %}</select></div><div class="table-wrap"><table id="leadsTable"><thead><tr><th>Client</th><th>Product</th><th>Status</th><th>Priority</th><th>Follow-up</th><th></th></tr></thead><tbody>{% for lead in leads %}<tr><td><div class="client"><span class="client-avatar">{{ lead.name[:2].upper() }}</span><div><strong>{{ lead.name }}</strong>{% if lead.company %}<small>{{ lead.company }}</small>{% endif %}</div></div></td><td><strong class="product-name">{{ lead.product }}</strong></td><td><span class="status status-{{ lead.status|lower|replace(' ', '-') }}">{{ lead.status }}</span></td><td><span class="priority {{ lead.priority|lower }}">{{ lead.priority }}</span></td><td class="date">{{ lead.call_on or '—' }}</td><td><a class="action-btn" href="{{ url_for('lead_detail', lead_id=lead.lead_id) }}" aria-label="View lead">→</a></td></tr>{% else %}<tr><td colspan="6" class="empty-state">◈<strong>No leads yet</strong><span>Add your first lead to get started.</span></td></tr>{% endfor %}</tbody></table></div></div><div class="dashboard-side"><div class="card side-card"><div class="card-header"><div><div class="card-title">Follow-ups</div><div class="card-subtitle">Upcoming activities</div></div><a class="view-link" href="{{ url_for('calls') }}">View</a></div><div class="follow-list"><a class="follow-item" href="{{ url_for('calls', filter='today') }}"><span class="follow-icon">☎</span><span><strong>Today's calls</strong><small>Scheduled for today</small><em>{{ stats.calls_today }} calls</em></span></a><a class="follow-item" href="{{ url_for('calls', filter='overdue') }}"><span class="follow-icon">!</span><span><strong>Overdue</strong><small>Need your attention</small><em>{{ stats.overdue_calls }} overdue</em></span></a><a class="follow-item" href="{{ url_for('calls', filter='tomorrow') }}"><span class="follow-icon">◷</span><span><strong>Tomorrow</strong><small>Upcoming calls</small><em>{{ stats.calls_tomorrow }} calls</em></span></a></div></div><div class="card side-card pipeline-card"><div class="card-header"><div><div class="card-title">Lead pipeline</div><div class="card-subtitle">Current distribution</div></div></div><div class="pipeline">{% for label, value, color in [('New', stats.new_leads, 'progress-blue'), ('Interested', stats.interested_leads, 'progress-green'), ('Converted', stats.converted_leads, ''), ('Lost', stats.lost_leads, 'progress-orange')] %}<div class="pipeline-row"><div class="pipeline-head"><span>{{ label }}</span><strong>{{ value }}</strong></div><div class="progress"><span class="progress-bar {{ color }}" style="width: {{ ((value / stats.total_leads * 100) if stats.total_leads else 0)|round|int }}%"></span></div></div>{% endfor %}</div></div></div></div>
 {% endblock %}
