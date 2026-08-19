@@ -19,6 +19,15 @@ CALL_TYPES = ['Call', 'Meet']
 PRIORITIES = ['Low', 'Normal', 'High']
 
 
+@app.template_filter('date_only')
+def date_only(value):
+    if not value:
+        return '—'
+    if hasattr(value, 'strftime'):
+        return value.strftime('%Y-%m-%d')
+    return str(value)[:10]
+
+
 def setup():
     if not DB_PATH.startswith(('postgres://', 'postgresql://')):
         os.makedirs(os.path.dirname(DB_PATH) or '.', exist_ok=True)

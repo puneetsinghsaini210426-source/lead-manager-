@@ -10,6 +10,12 @@ def is_postgres(db_path):
 
 
 class PostgresRow(dict):
+    def __init__(self, row):
+        super().__init__({
+            key: value.isoformat() if hasattr(value, 'isoformat') else value
+            for key, value in row.items()
+        })
+
     def __getitem__(self, key):
         if isinstance(key, int):
             return super().__getitem__(tuple(self.keys())[key])
