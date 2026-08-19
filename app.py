@@ -76,7 +76,7 @@ def dashboard():
     tomorrow = today + timedelta(days=1)
     cur.execute('SELECT COUNT(*) FROM leads WHERE call_on = ?', (today.isoformat(),))
     stats['calls_today'] = cur.fetchone()[0]
-    cur.execute('SELECT COUNT(*) FROM leads WHERE call_on < ? AND status NOT IN ("Converted","Lost")', (today.isoformat(),))
+    cur.execute("SELECT COUNT(*) FROM leads WHERE call_on < ? AND status NOT IN ('Converted', 'Lost')", (today.isoformat(),))
     stats['overdue_calls'] = cur.fetchone()[0]
     cur.execute('SELECT COUNT(*) FROM leads WHERE call_on = ?', (tomorrow.isoformat(),))
     stats['calls_tomorrow'] = cur.fetchone()[0]
