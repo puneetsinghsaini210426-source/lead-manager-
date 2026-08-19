@@ -9,6 +9,13 @@ def is_postgres(db_path):
     return str(db_path).startswith(('postgres://', 'postgresql://'))
 
 
+class PostgresRow(dict):
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return super().__getitem__(tuple(self.keys())[key])
+        return super().__getitem__(key)
+
+
 class PostgresCursor:
     def __init__(self, cursor):
         self._cursor = cursor
@@ -17,10 +24,11 @@ class PostgresCursor:
         return self._cursor.execute(query.replace('?', '%s'), params)
 
     def fetchone(self):
-        return self._cursor.fetchone()
+        row = self._cursor.fetchone()
+        return PostgresRow(row) if row is not None else None
 
     def fetchall(self):
-        return self._cursor.fetchall()
+        return [PostgresRow(row) for row in self._cursor.fetchall()]
 
 
 class PostgresConnection:

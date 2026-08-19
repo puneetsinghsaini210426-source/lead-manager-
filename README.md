@@ -25,6 +25,18 @@ username normally looks like `postgres.PROJECT_REF`, and Session pooler uses por
 Transaction pooler uses port `6543`, but Session pooler is the better fit for this
 long-running Flask/Gunicorn service.
 
+## Render start command
+
+In the Render service settings, set **Start Command** to:
+
+```bash
+gunicorn app:app --bind 0.0.0.0:$PORT
+```
+
+The repository `Procfile` already contains this command. If Render logs show
+`Running 'python app.py'` and Flask's development-server warning, the dashboard's Start
+Command is overriding the `Procfile`; replace it and redeploy.
+
 The app creates the PostgreSQL tables automatically on startup. All devices using the
 same Render URL then read and write the same hosted database. Export the current local
 leads before deployment and use the Import page after setting `DATABASE_URL` if the
